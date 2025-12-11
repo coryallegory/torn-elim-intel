@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Torn Elimination Intel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="app-container">
+
+        <section id="meta-section" class="panel grouped-panel">
+
+            <!-- API Key+User Box -->
+            <div id="apikey-box">
+                <h2>API Key</h2>
+                <div class="apikey-row">
+                    <input type="text" id="apikey-input" placeholder="Enter API key">
+                    <button id="apikey-apply">Apply</button>
+                    <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
+                </div>
+
+                <div id="userinfo-box" class="userinfo-box hidden">
+                    <div id="user-info-content"></div>
+                </div>
+            </div>
+
+            <!-- TEAM LIST -->
+            <div id="team-container">
+                <h2>Teams</h2>
+                <table id="team-table">
+                    <thead>
+                        <tr>
+                            <th data-col="id">ID</th>
+                            <th data-col="name">Name</th>
+                            <th data-col="participants">Participants</th>
+                            <th data-col="score">Score</th>
+                            <th data-col="wins">Wins</th>
+                            <th data-col="losses">Losses</th>
+                            <th data-col="lives">Lives</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="team-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Shared metadata refresh indicator -->
+            <div class="refresh-indicator top-right">
+                <span id="metadata-refresh-icon" class="spinner hidden"></span>
+                <span id="metadata-refresh-timer">Next refresh: --</span>
+            </div>
+        </section>
+
+        <!-- PLAYER LIST + FILTERS -->
+        <section id="player-section" class="panel">
+
+            <h2>Team Players</h2>
+
+            <div id="team-data-refresh-box" class="refresh-indicator top-right">
+                <span id="team-refresh-icon" class="spinner hidden"></span>
+                <span id="team-refresh-timer">Next refresh: --</span>
+            </div>
+
+            <!-- Filters -->
+            <div id="player-filters">
+                <label>Level min:
+                    <input type="number" id="level-min" value="0">
+                </label>
+                <label>Level max:
+                    <input type="number" id="level-max" value="100">
+                </label>
+
+                <label>
+                    <input type="checkbox" id="filter-okay-only"> Include only “Okay”
+                </label>
+
+                <label>
+                    <input type="checkbox" id="filter-include-traveling" checked>
+                    Include Traveling
+                </label>
+
+                <label>
+                    <input type="checkbox" id="filter-include-abroad" checked>
+                    Include Abroad
+                </label>
+
+                <div id="abroad-filters" class="abroad-list"></div>
+            </div>
+
+            <table id="player-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Status</th>
+                        <th>Last Action</th>
+                        <th>Attacks</th>
+                        <th>Score</th>
+                        <th>Hospital</th>
+                    </tr>
+                </thead>
+                <tbody id="player-table-body"></tbody>
+            </table>
+        </section>
+
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>

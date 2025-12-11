@@ -1,0 +1,151 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #222;
+    font-family: Arial, sans-serif;
+    color: #eee;
+}
+
+#app-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 15px;
+}
+
+.panel {
+    background: #333;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    position: relative;
+}
+
+h2, h3 {
+    margin-top: 0;
+}
+
+.grouped-panel {
+    position: relative;
+    padding-top: 50px;
+}
+
+.top-right {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+
+.inline-status {
+    margin-left: 12px;
+    align-self: center;
+}
+
+
+.status-text {
+    margin-top: 5px;
+}
+
+.status-error {
+    color: #ff4444;
+}
+
+.apikey-row {
+    display: flex;
+    gap: 10px;
+}
+
+input[type="text"], input[type="number"] {
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid #666;
+    background: #111;
+    color: #eee;
+}
+
+button {
+    padding: 6px 12px;
+    background: #555;
+    border: 1px solid #888;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #fff;
+}
+button:hover {
+    background: #666;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th {
+    background: #444;
+    cursor: pointer;
+    padding: 8px;
+}
+
+td {
+    padding: 6px;
+    border-top: 1px solid #555;
+}
+
+tr.selected-row {
+    background: #555 !important;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* REFRESH SPINNER */
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* COLOR STATES */
+.state-green { color: #00cc44; }
+.state-orange { color: #ff9900; }
+.state-red { color: #ff3333; }
+.state-blue { color: #33aaff; }
+
+/* Box grouping user + team list */
+.userinfo-box {
+    border: 1px solid #666;
+    padding: 8px;
+    margin-top: 10px;
+}
+
+#player-section {
+    border: 1px solid #666;
+}
+
+#player-filters {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #2b2b2b;
+    border-radius: 4px;
+}
+
+#player-filters label {
+    margin-right: 12px;
+}
+
+.abroad-list {
+    margin-top: 6px;
+}
+
