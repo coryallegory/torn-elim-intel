@@ -265,7 +265,7 @@
         return players.filter(p => {
             const st = p.status.state;
             if (p.level < levelMin || p.level > levelMax) return false;
-            if (okayOnly && st !== "Okay") return false;
+            if (okayOnly && st === "Hospital") return false;
             if (locationSelection === "all") return true;
 
             const destination = getAbroadDestination(p.status) || "Unknown";
