@@ -51,12 +51,52 @@
     let metadataRefreshInFlight = null;
     let metadataRefreshStart = 0;
 
+    function ensureValidSelectedTeam() {
+        const teams = Array.isArray(state.teams) ? state.teams : [];
+        const availableIds = new Set(
+            teams
+                .map(t => t?.id)
+                .filter(id => id !== undefined && id !== null)
+        );
+
+        Object.keys(state.teamPlayers || {}).forEach(idStr => {
+            if (idStr === null || idStr === undefined) return;
+            const parsed = Number(idStr);
+            if (!Number.isNaN(parsed)) {
+                availableIds.add(parsed);
+            } else {
+                availableIds.add(idStr);
+            }
+        });
+
+        const current = state.selectedTeamId;
+        if (current !== null && current !== undefined && availableIds.has(current)) {
+            return current;
+        }
+
+        const fallback = teams[0]?.id ?? Array.from(availableIds)[0] ?? null;
+        state.saveSelectedTeamId(fallback ?? null);
+        return fallback;
+    }
+
     function init() {
         state.loadFromStorage();
         dom.apikeyInput.value = state.apikey || "";
         dom.ffapikeyInput.value = state.ffapikey || "";
 
+        if (state.user) {
+            dom.userBox.classList.remove("hidden");
+            renderUserInfo();
+        }
+
         if (state.apikey) {
+            const hasCachedTeams = Array.isArray(state.teams) && state.teams.length > 0;
+            const hasCachedPlayers = state.teamPlayers && Object.keys(state.teamPlayers).length > 0;
+            if (hasCachedTeams || hasCachedPlayers) {
+                ensureValidSelectedTeam();
+                renderTeams();
+                renderPlayers();
+            }
             validateAndStart();
         } else {
             showNoKey();
@@ -160,7 +200,7 @@
                 state.cacheTeamPlayers(team.id, players);
             });
 
-            state.selectedTeamId = state.teams[0]?.id || null;
+            state.saveSelectedTeamId(state.teams[0]?.id || null);
             renderTeams();
             renderPlayers();
         } catch (err) {
@@ -230,6 +270,7 @@
 
             if (!teamData.error && teamData.elimination) {
                 state.teams = teamData.elimination;
+                ensureValidSelectedTeam();
                 renderTeams();
             }
 
@@ -677,6 +718,7 @@
     }
 
     function renderTeams() {
+        ensureValidSelectedTeam();
         const selected = state.selectedTeamId;
         dom.teamTableBody.innerHTML = "";
 
@@ -707,7 +749,7 @@
     }
 
     async function handleTeamSelect(teamId) {
-        state.selectedTeamId = teamId;
+        state.saveSelectedTeamId(teamId);
         state.selectedPlayersByTeam[teamId] = state.selectedPlayersByTeam[teamId] || null;
         renderTeams();
         await refreshTeamPlayers(false);

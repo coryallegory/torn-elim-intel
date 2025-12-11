@@ -19,18 +19,27 @@ window.state = {
         this.apikey = localStorage.getItem("apikey") || "";
         this.ffapikey = localStorage.getItem("ffapikey") || "";
         try {
+            const userRaw = localStorage.getItem("user");
+            const teamsRaw = localStorage.getItem("teams");
             const playersRaw = localStorage.getItem("teamPlayers");
             const playerTimestampsRaw = localStorage.getItem("teamPlayersTimestamp");
             const metadataTs = localStorage.getItem("metadataTimestamp");
+            const selectedTeamRaw = localStorage.getItem("selectedTeamId");
 
+            this.user = userRaw ? JSON.parse(userRaw) : null;
+            this.teams = teamsRaw ? JSON.parse(teamsRaw) : [];
             this.teamPlayers = playersRaw ? JSON.parse(playersRaw) : {};
             this.teamPlayersTimestamp = playerTimestampsRaw ? JSON.parse(playerTimestampsRaw) : {};
             this.metadataTimestamp = metadataTs ? parseInt(metadataTs, 10) : 0;
+            this.selectedTeamId = selectedTeamRaw ? parseInt(selectedTeamRaw, 10) : null;
         } catch (err) {
             console.error("Failed to restore cached state", err);
             this.teamPlayers = {};
             this.teamPlayersTimestamp = {};
             this.metadataTimestamp = 0;
+            this.teams = [];
+            this.selectedTeamId = null;
+            this.user = null;
         }
     },
 
@@ -49,6 +58,17 @@ window.state = {
         this.teams = teams;
         this.metadataTimestamp = Date.now();
         localStorage.setItem("metadataTimestamp", this.metadataTimestamp.toString());
+        localStorage.setItem("user", JSON.stringify(user || null));
+        localStorage.setItem("teams", JSON.stringify(teams || []));
+    },
+
+    saveSelectedTeamId(teamId) {
+        this.selectedTeamId = teamId;
+        if (teamId === null || teamId === undefined) {
+            localStorage.removeItem("selectedTeamId");
+            return;
+        }
+        localStorage.setItem("selectedTeamId", teamId.toString());
     },
 
     cacheTeamPlayers(teamId, players) {
