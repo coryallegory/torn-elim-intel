@@ -656,8 +656,15 @@
 
     async function handleTeamSelect(teamId) {
         state.selectedTeamId = teamId;
+        state.selectedPlayersByTeam[teamId] = state.selectedPlayersByTeam[teamId] || null;
         renderTeams();
         await refreshTeamPlayers(false);
+    }
+
+    function handlePlayerSelect(teamId, playerId) {
+        const currentSelected = state.selectedPlayersByTeam[teamId];
+        state.selectedPlayersByTeam[teamId] = currentSelected === playerId ? null : playerId;
+        renderPlayers();
     }
 
     async function refreshTeamPlayers(force = false) {
@@ -833,6 +840,8 @@
         const players = (state.teamPlayers[teamId] || []).map(ensurePlayerDefaults);
         state.teamPlayers[teamId] = players;
 
+        const selectedPlayerId = state.selectedPlayersByTeam[teamId] || null;
+
         updateLocationFilterOptions(players);
         const filtered = applyFilters(players);
         const sortedPlayers = sortPlayersList(filtered);
@@ -874,6 +883,9 @@
             rawCell.classList.add("hidden", "raw-data-cell");
             rawCell.textContent = JSON.stringify(p.rawData || {}, null, 0);
             row.appendChild(rawCell);
+
+            if (selectedPlayerId === p.id) row.classList.add("selected-row");
+            row.addEventListener("click", () => handlePlayerSelect(teamId, p.id));
 
             dom.playerTableBody.appendChild(row);
         }
