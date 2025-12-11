@@ -868,6 +868,8 @@
                 statusCellContent = `In hospital (${loc}) for <span class="countdown" data-until="${hospitalUntil}">${countdownText}</span>`;
             }
 
+            const attackUrl = `https://www.torn.com/loader.php?sid=attack&user2ID=${p.id}`;
+
             row.innerHTML = `
                 <td><a href="https://www.torn.com/profiles.php?XID=${p.id}" target="_blank" rel="noopener noreferrer">${p.id}</a></td>
                 <td>${p.name}</td>
@@ -875,7 +877,7 @@
                 <td class="status-cell ${statusClass}">${statusCellContent}</td>
                 <td>${p.last_action.relative}</td>
                 <td>${p.attacks}</td>
-                <td>${p.bs_estimate_human || "--"}</td>
+                <td><a href="${attackUrl}" target="_blank" rel="noopener noreferrer">${p.bs_estimate_human || "--"}</a></td>
                 <td class="hidden raw-data-cell">${JSON.stringify(p.rawData || {}, null, 0)}</td>
             `;
 
