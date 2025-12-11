@@ -10,8 +10,7 @@
         levelMinInput: document.getElementById("level-min"),
         levelMaxInput: document.getElementById("level-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
-        filterTraveling: document.getElementById("filter-include-traveling"),
-        abroadFilter: document.getElementById("abroad-filter"),
+        locationFilter: document.getElementById("location-filter"),
         metadataTimerLabel: document.getElementById("metadata-refresh-timer"),
         metadataIcon: document.getElementById("metadata-refresh-icon"),
         teamTimerLabel: document.getElementById("team-refresh-timer"),
@@ -261,39 +260,58 @@
         const levelMin = parseInt(dom.levelMinInput.value || 0, 10);
         const levelMax = parseInt(dom.levelMaxInput.value || 100, 10);
         const okayOnly = dom.filterOkayOnly.checked;
-        const includeTraveling = dom.filterTraveling.checked;
-        const abroadSelection = dom.abroadFilter.value;
+        const locationSelection = dom.locationFilter.value;
 
         return players.filter(p => {
             const st = p.status.state;
             if (p.level < levelMin || p.level > levelMax) return false;
             if (okayOnly && st !== "Okay") return false;
-            if (st === "Traveling" && !includeTraveling) return false;
-            if (st === "Abroad") {
-                if (abroadSelection !== "all") {
-                    const dest = getAbroadDestination(p.status) || "Unknown";
-                    if (dest !== abroadSelection) return false;
-                }
+            if (locationSelection === "all") return true;
+
+            const destination = getAbroadDestination(p.status) || "Unknown";
+            if (locationSelection === "torn") {
+                return st !== "Abroad" && st !== "Traveling";
             }
-            return true;
+            if (locationSelection === "abroad") {
+                return st === "Abroad" || st === "Traveling";
+            }
+            if (locationSelection === "traveling") {
+                return st === "Traveling";
+            }
+            return (st === "Abroad" || st === "Traveling") && destination === locationSelection;
         });
     }
 
-    function updateAbroadFilterOptions(players) {
+    function updateLocationFilterOptions(players) {
         const destinations = new Set();
         players.forEach(p => {
-            if (p.status.state === "Abroad") {
+            if (p.status.state === "Abroad" || p.status.state === "Traveling") {
                 destinations.add(getAbroadDestination(p.status) || "Unknown");
             }
         });
 
-        const previous = dom.abroadFilter.value || "all";
-        dom.abroadFilter.innerHTML = "";
+        const previous = dom.locationFilter.value || "all";
+        dom.locationFilter.innerHTML = "";
 
         const defaultOpt = document.createElement("option");
         defaultOpt.value = "all";
-        defaultOpt.textContent = "All Abroad";
-        dom.abroadFilter.appendChild(defaultOpt);
+        defaultOpt.textContent = "All";
+        dom.locationFilter.appendChild(defaultOpt);
+
+        const tornOpt = document.createElement("option");
+        tornOpt.value = "torn";
+        tornOpt.textContent = "Torn";
+        dom.locationFilter.appendChild(tornOpt);
+
+        const abroadOpt = document.createElement("option");
+        abroadOpt.value = "abroad";
+        abroadOpt.textContent = "Abroad (not in Torn)";
+        dom.locationFilter.appendChild(abroadOpt);
+
+        const travelingOpt = document.createElement("option");
+        travelingOpt.value = "traveling";
+        travelingOpt.textContent = "Traveling";
+        dom.locationFilter.appendChild(travelingOpt);
 
         Array.from(destinations)
             .sort((a, b) => a.localeCompare(b))
@@ -301,11 +319,14 @@
                 const opt = document.createElement("option");
                 opt.value = dest;
                 opt.textContent = dest;
-                dom.abroadFilter.appendChild(opt);
+                dom.locationFilter.appendChild(opt);
             });
 
-        if (Array.from(destinations).includes(previous)) {
-            dom.abroadFilter.value = previous;
+        const staticOptions = new Set(["all", "torn", "abroad", "traveling"]);
+        if (staticOptions.has(previous)) {
+            dom.locationFilter.value = previous;
+        } else if (Array.from(destinations).includes(previous)) {
+            dom.locationFilter.value = previous;
         }
     }
 
@@ -317,7 +338,7 @@
         }
 
         const players = state.teamPlayers[teamId] || [];
-        updateAbroadFilterOptions(players);
+        updateLocationFilterOptions(players);
         const filtered = applyFilters(players);
 
         const scrollContainer = dom.playerTableBody.parentElement;
@@ -411,8 +432,7 @@
         dom.levelMinInput.addEventListener("change", renderPlayers);
         dom.levelMaxInput.addEventListener("change", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
-        dom.filterTraveling.addEventListener("change", renderPlayers);
-        dom.abroadFilter.addEventListener("change", renderPlayers);
+        dom.locationFilter.addEventListener("change", renderPlayers);
     }
 
     function startMetadataCountdown() {
