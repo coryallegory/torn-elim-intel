@@ -199,6 +199,20 @@
         return desc;
     }
 
+    function extractHospitalLocation(statusObj) {
+        if (!statusObj || !statusObj.description) return "Torn";
+        const desc = statusObj.description.trim();
+
+        // Try patterns like: In a Hawaiian hospital...
+        const match = desc.match(/In\s+(?:a|an)?\s*([A-Za-z]+)\s+hospital/i);
+        if (match && match[1]) {
+            return match[1];
+        }
+
+        // Default if no city is named
+        return "Torn";
+    }
+
     function getAbroadDestination(statusObj) {
         if (!statusObj) return null;
         const details = statusObj.details || {};
@@ -483,7 +497,8 @@
                 const remaining = hospitalUntil - nowSec;
                 const countdownText = formatHMS(Math.max(0, remaining));
                 statusClass = getHospitalCountdownClass(remaining);
-                statusCellContent = `In hospital for <span class="countdown" data-until="${hospitalUntil}">${countdownText}</span>`;
+                const loc = extractHospitalLocation(p.status);
+                statusCellContent = `In hospital (${loc}) for <span class="countdown" data-until="${hospitalUntil}">${countdownText}</span>`;
             }
 
             row.innerHTML = `
