@@ -27,7 +27,6 @@ window.state = {
             const playerTimestampsRaw = localStorage.getItem("teamPlayersTimestamp");
             const metadataTs = localStorage.getItem("metadataTimestamp");
             const selectedTeamRaw = localStorage.getItem("selectedTeamId");
-            const hidePinkPowerRaw = localStorage.getItem("hidePinkPowerTeam");
 
             this.user = userRaw ? JSON.parse(userRaw) : null;
             this.teams = teamsRaw ? JSON.parse(teamsRaw) : [];
@@ -35,7 +34,8 @@ window.state = {
             this.teamPlayersTimestamp = playerTimestampsRaw ? JSON.parse(playerTimestampsRaw) : {};
             this.metadataTimestamp = metadataTs ? parseInt(metadataTs, 10) : 0;
             this.selectedTeamId = selectedTeamRaw ? parseInt(selectedTeamRaw, 10) : null;
-            this.hidePinkPowerTeam = hidePinkPowerRaw === "true";
+            localStorage.removeItem("hidePinkPowerTeam");
+            this.hidePinkPowerTeam = false;
         } catch (err) {
             console.error("Failed to restore cached state", err);
             this.teamPlayers = {};
@@ -77,8 +77,8 @@ window.state = {
     },
 
     hidePinkPowerPermanently() {
-        this.hidePinkPowerTeam = true;
-        localStorage.setItem("hidePinkPowerTeam", "true");
+        this.hidePinkPowerTeam = false;
+        localStorage.removeItem("hidePinkPowerTeam");
     },
 
     cacheTeamPlayers(teamId, players) {

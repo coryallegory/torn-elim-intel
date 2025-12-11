@@ -64,14 +64,13 @@
         return normalizedName.includes("pink power");
     }
 
-    function isHiddenTeam(teamLike) {
-        return state.hidePinkPowerTeam && isPinkPowerTeam(teamLike);
+    function isHiddenTeam() {
+        return false;
     }
 
     function getVisibleTeams(teams = state.teams) {
         if (!Array.isArray(teams)) return [];
-        if (!state.hidePinkPowerTeam) return teams;
-        return teams.filter(t => !isPinkPowerTeam(t));
+        return teams;
     }
 
     function normalizeTeamId(id) {
@@ -472,15 +471,8 @@
     }
 
     function enforcePinkPowerRestriction(user) {
-        if (state.hidePinkPowerTeam) return;
-
-        const teamInfo = user?.eliminationTeam;
-        if (teamInfo && !isPinkPowerTeam(teamInfo)) {
-            state.hidePinkPowerPermanently();
-            ensureValidSelectedTeam();
-            renderTeams();
-            renderPlayers();
-        }
+        localStorage.removeItem("hidePinkPowerTeam");
+        state.hidePinkPowerPermanently();
     }
 
     function simplifyStatus(statusObj) {
