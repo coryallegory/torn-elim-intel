@@ -869,6 +869,11 @@
                 <td class="hidden raw-data-cell">${JSON.stringify(p.rawData || {}, null, 0)}</td>
             `;
 
+            const rawCell = document.createElement("td");
+            rawCell.classList.add("hidden", "raw-data-cell");
+            rawCell.textContent = JSON.stringify(p.rawData || {}, null, 0);
+            row.appendChild(rawCell);
+
             dom.playerTableBody.appendChild(row);
         }
 
