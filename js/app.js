@@ -51,27 +51,27 @@
     let metadataRefreshInFlight = null;
     let metadataRefreshStart = 0;
 
+    function normalizeTeamId(id) {
+        if (id === null || id === undefined) return null;
+        return String(id);
+    }
+
     function ensureValidSelectedTeam() {
         const teams = Array.isArray(state.teams) ? state.teams : [];
         const availableIds = new Set(
             teams
-                .map(t => t?.id)
-                .filter(id => id !== undefined && id !== null)
+                .map(t => normalizeTeamId(t?.id))
+                .filter(id => id !== null)
         );
 
         Object.keys(state.teamPlayers || {}).forEach(idStr => {
-            if (idStr === null || idStr === undefined) return;
-            const parsed = Number(idStr);
-            if (!Number.isNaN(parsed)) {
-                availableIds.add(parsed);
-            } else {
-                availableIds.add(idStr);
-            }
+            const normalized = normalizeTeamId(idStr);
+            if (normalized !== null) availableIds.add(normalized);
         });
 
-        const current = state.selectedTeamId;
-        if (current !== null && current !== undefined && availableIds.has(current)) {
-            return current;
+        const current = normalizeTeamId(state.selectedTeamId);
+        if (current !== null && availableIds.has(current)) {
+            return state.selectedTeamId;
         }
 
         const fallback = teams[0]?.id ?? Array.from(availableIds)[0] ?? null;
@@ -747,13 +747,14 @@
     function renderTeams() {
         ensureValidSelectedTeam();
         const selected = state.selectedTeamId;
+        const selectedNormalized = normalizeTeamId(selected);
         dom.teamTableBody.innerHTML = "";
 
         const teams = sortTeamsList(state.teams);
 
         for (const t of teams) {
             const row = document.createElement("tr");
-            if (t.id === selected) row.classList.add("selected-row");
+            if (normalizeTeamId(t.id) === selectedNormalized) row.classList.add("selected-row");
             if (t.eliminated === true) row.classList.add("eliminated-row");
 
             row.innerHTML = `
