@@ -225,7 +225,13 @@
     }
 
     function getPlayerIdentifier(player) {
-        return player && player.player_id !== undefined && player.player_id !== null ? player.player_id : null;
+        const candidates = ["id", "player_id", "user_id", "torn_id", "tornid"];
+        for (const key of candidates) {
+            if (player[key] !== undefined && player[key] !== null) {
+                return player[key];
+            }
+        }
+        return null;
     }
 
     async function maybeFetchFfScouterStats(players) {
@@ -244,7 +250,8 @@
                 const playerId = getPlayerIdentifier(p);
                 if (playerId === null || playerId === undefined) return;
 
-                const val = statsMap.get(playerId);
+                const numericId = parseInt(playerId, 10);
+                const val = statsMap.get(playerId) || (!Number.isNaN(numericId) ? statsMap.get(numericId) : undefined);
                 if (val !== undefined) {
                     p.bs_estimate_human = val;
                 }
