@@ -191,12 +191,16 @@
         renderPlayers();
     }
 
-    async function loadStaticSnapshot() {
-        try {
+    let staticSnapshotPromise = null;
+
+    async function fetchStaticSnapshot() {
+        if (staticSnapshotPromise) return staticSnapshotPromise;
+
+        staticSnapshotPromise = (async () => {
             const res = await fetch("elimination_participants.json", { cache: "no-cache" });
             if (!res.ok) {
                 console.warn("No static elimination snapshot available.");
-                return;
+                return [];
             }
 
             const payload = await res.json();
@@ -206,6 +210,22 @@
                     ? payload.teams
                     : [];
 
+            if (!teams.length) return [];
+            return teams;
+        })();
+
+        try {
+            return await staticSnapshotPromise;
+        } catch (err) {
+            staticSnapshotPromise = null;
+            console.warn("Failed to load static elimination snapshot", err);
+            return [];
+        }
+    }
+
+    async function loadStaticSnapshot() {
+        try {
+            const teams = await fetchStaticSnapshot();
             if (!teams.length) return;
 
             state.teams = teams.map(t => ({
@@ -803,6 +823,8 @@
         const teamId = state.selectedTeamId;
         if (!teamId) return;
 
+        await maybeLoadStaticTeamPlayers(teamId);
+
         if (!state.apikey) {
             renderPlayers();
             return;
@@ -865,6 +887,22 @@
         } finally {
             teamFetchInFlight.delete(teamId);
         }
+    }
+
+    async function maybeLoadStaticTeamPlayers(teamId) {
+        const cached = state.teamPlayers[teamId];
+        if (Array.isArray(cached) && cached.length > 0) return false;
+
+        const teams = await fetchStaticSnapshot();
+        if (!teams.length) return false;
+
+        const normalizedTarget = normalizeTeamId(teamId);
+        const team = teams.find(t => normalizeTeamId(t.id) === normalizedTarget);
+        if (!team || !Array.isArray(team.players)) return false;
+
+        state.teamPlayers[teamId] = team.players.map(p => ensurePlayerDefaults({ ...p }));
+        renderPlayers();
+        return true;
     }
 
     function applyFilters(players) {
