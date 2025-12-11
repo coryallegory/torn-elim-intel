@@ -499,7 +499,7 @@
         if (!player) return player;
 
         const { rawData, location, ...rest } = player;
-        const status = player.status || { state: "Unknown", description: "Unknown" };
+        const status = player.status || { state: "--", description: "--" };
         const lastActionRaw = player.last_action || {};
         const lastAction = {
             relative: lastActionRaw.relative ?? "--",
@@ -509,6 +509,7 @@
         const canonicalLocation = player.location ?? determinePlayerLocation(status);
         const bsEstimateHuman = player.bs_estimate_human === undefined ? "--" : player.bs_estimate_human;
         const bsEstimateNumeric = deriveBsEstimateNumber(player);
+        const attacks = player.attacks ?? "--";
 
         return {
             ...player,
@@ -517,7 +518,8 @@
             location: canonicalLocation,
             rawData: rawData || { ...rest },
             bs_estimate_human: bsEstimateHuman,
-            bs_estimate: bsEstimateNumeric
+            bs_estimate: bsEstimateNumeric,
+            attacks
         };
     }
 
