@@ -787,6 +787,7 @@
         state.saveSelectedTeamId(teamId);
         state.selectedPlayersByTeam[teamId] = state.selectedPlayersByTeam[teamId] || null;
         renderTeams();
+        renderPlayers();
         await refreshTeamPlayers(false);
     }
 
