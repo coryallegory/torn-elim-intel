@@ -14,6 +14,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,8 +40,28 @@ jobs:
           const API_BASE = 'https://api.torn.com/v2';
           const API_KEY = process.env.API_KEY;
           const PAGE_SIZE = 100;
+          const DELAY_MS = 5000;
+
+          let lastRequestTime = 0;
+
+          function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+
+          async function waitForThrottle() {
+            const now = Date.now();
+            const elapsed = now - lastRequestTime;
+
+            if (elapsed < DELAY_MS) {
+              await delay(DELAY_MS - elapsed);
+            }
+
+            lastRequestTime = Date.now();
+          }
 
           async function request(path) {
+            await waitForThrottle();
+
             const res = await fetch(`${API_BASE}${path}`, {
               headers: {
                 Accept: 'application/json',
@@ -114,6 +137,21 @@ jobs:
           NODE
 
           node scripts/generate-elimination.js
+
+      - name: Commit updated elimination data
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          if [[ -n "$(git status --porcelain elimination_participants.json)" ]]; then
+            git add elimination_participants.json
+            git commit -m "Update elimination participants data"
+            git push origin HEAD:master
+          else
+            echo "No changes to commit."
+          fi
 
       - name: Upload elimination data
         uses: actions/upload-artifact@v4
