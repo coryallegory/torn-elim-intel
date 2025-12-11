@@ -19,6 +19,7 @@
     };
 
     const intervals = { metadata: null, team: null, countdown: null };
+    const teamFetchInFlight = new Map();
 
     function init() {
         state.loadFromStorage();
@@ -164,6 +165,13 @@
         const teamId = state.selectedTeamId;
         if (!teamId) return;
 
+        const inFlight = teamFetchInFlight.get(teamId);
+        if (inFlight) {
+            await inFlight;
+            renderPlayers();
+            return;
+        }
+
         const now = Date.now();
         const should = force || state.shouldRefreshTeam(teamId, now);
         if (!should || now - (state.teamPlayersTimestamp[teamId] || 0) < state.MIN_REFRESH_MS) {
@@ -171,36 +179,45 @@
             return;
         }
 
-        dom.teamIcon.classList.remove("hidden");
+        const fetchPromise = (async () => {
+            dom.teamIcon.classList.remove("hidden");
 
-        let offset = 0;
-        let combined = [];
-        let callCount = 0;
-        let keepPaging = true;
+            let offset = 0;
+            let combined = [];
+            let callCount = 0;
+            let keepPaging = true;
 
-        while (keepPaging) {
-            const data = await api.getTeamPlayers(teamId, offset, state.apikey);
-            callCount++;
+            while (keepPaging) {
+                const data = await api.getTeamPlayers(teamId, offset, state.apikey);
+                callCount++;
 
-            if (data.error) {
-                console.error("Players fetch error:", data.error);
-                break;
+                if (data.error) {
+                    console.error("Players fetch error:", data.error);
+                    break;
+                }
+
+                const arr = data.eliminationteam || [];
+                combined = combined.concat(arr);
+
+                if (arr.length < 100) {
+                    keepPaging = false;
+                } else {
+                    offset += 100;
+                }
             }
 
-            const arr = data.eliminationteam || [];
-            combined = combined.concat(arr);
+            console.log(`Player refresh API calls: ${callCount}`);
+            state.cacheTeamPlayers(teamId, combined);
+            renderPlayers();
+            dom.teamIcon.classList.add("hidden");
+        })();
 
-            if (arr.length < 100) {
-                keepPaging = false;
-            } else {
-                offset += 100;
-            }
+        teamFetchInFlight.set(teamId, fetchPromise);
+        try {
+            await fetchPromise;
+        } finally {
+            teamFetchInFlight.delete(teamId);
         }
-
-        console.log(`Player refresh API calls: ${callCount}`);
-        state.cacheTeamPlayers(teamId, combined);
-        renderPlayers();
-        dom.teamIcon.classList.add("hidden");
     }
 
     function applyFilters(players) {
