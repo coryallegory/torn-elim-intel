@@ -23,11 +23,11 @@ window.api = {
     },
 
     getUser(apikey) {
-        return this.request(`${this.BASE}/user/profile`, apikey);
+        return this.request(`${this.BASE}/user/?selections=profile`, apikey);
     },
 
     getTeams(apikey) {
-        return this.request(`${this.BASE}/torn/elimination`, apikey);
+        return this.request(`${this.BASE}/torn/elimination/?elimination=true`, apikey);
     },
 
     getTeamPlayers(teamId, offset, apikey) {
