@@ -250,8 +250,8 @@
                 const playerId = getPlayerIdentifier(p);
                 if (playerId === null || playerId === undefined) return;
 
-                const numericId = parseInt(playerId, 10);
-                const val = statsMap.get(playerId) || (!Number.isNaN(numericId) ? statsMap.get(numericId) : undefined);
+                const numericId = Number(playerId);
+                const val = statsMap.get(numericId);
                 if (val !== undefined) {
                     p.bs_estimate_human = val;
                 }
@@ -279,9 +279,9 @@
     }
 
     function addStatEntryToMap(map, entry) {
-        const id = entry && entry.player_id;
-        const bs = entry && (entry.bs_estimate_human ?? entry.bs_estimate);
-        if (id === undefined || id === null || bs === undefined) return;
+        const id = Number(entry?.player_id);
+        const bs = entry?.bs_estimate_human ?? entry?.bs_estimate;
+        if (Number.isNaN(id) || bs === undefined) return;
 
         map.set(id, bs);
     }
