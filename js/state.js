@@ -5,6 +5,7 @@ window.state = {
     user: null,
     teams: [],
     selectedTeamId: null,
+    selectedPlayersByTeam: {},
 
     teamPlayers: {},
     teamPlayersTimestamp: {},
