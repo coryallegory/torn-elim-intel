@@ -42,6 +42,8 @@
     const LOCATION_SYNONYMS = buildLocationSynonymMap();
 
     const intervals = { metadata: null, team: null, countdown: null };
+    let offlineTeamLookup = null;
+    let offlineTeamLookupPromise = null;
     const teamFetchInFlight = new Map();
     const teamRefreshStart = new Map();
     const sortState = {
@@ -142,7 +144,7 @@
             return;
         }
 
-        state.user = data.profile;
+        state.user = await attachOfflineTeamToUser(data.profile);
         dom.apikeyStatus.textContent = "API key loaded";
         dom.apikeyStatus.classList.remove("status-error");
         dom.userBox.classList.remove("hidden");
@@ -207,6 +209,8 @@
                     : [];
 
             if (!teams.length) return;
+
+            primeOfflineTeamLookup(teams);
 
             state.teams = teams.map(t => ({
                 id: t.id,
@@ -291,7 +295,7 @@
             ]);
 
             if (!userData.error && userData.profile) {
-                state.user = userData.profile;
+                state.user = await attachOfflineTeamToUser(userData.profile);
                 renderUserInfo();
             }
 
@@ -319,11 +323,106 @@
 
         const stateColor = mapStateColor(u.status.state);
         const statusText = simplifyStatus(u.status);
+        const teamText = formatUserTeamLabel(u.eliminationTeam);
 
         dom.userInfoContent.innerHTML = `
             <div><strong>${u.name}</strong> [${u.level}]</div>
             <div class="${stateColor}">${statusText}</div>
+            <div>Team: ${teamText}</div>
         `;
+    }
+
+    function buildOfflineTeamLookup(teams) {
+        const lookup = new Map();
+        if (!Array.isArray(teams)) return lookup;
+
+        teams.forEach(team => {
+            const teamId = team?.id;
+            const teamName = team?.name;
+            const players = Array.isArray(team?.players) ? team.players : [];
+
+            players.forEach(player => {
+                const playerId = Number(player?.id);
+                if (Number.isNaN(playerId)) return;
+
+                lookup.set(playerId, {
+                    id: teamId,
+                    name: teamName
+                });
+            });
+        });
+
+        return lookup;
+    }
+
+    function primeOfflineTeamLookup(teams) {
+        const lookup = buildOfflineTeamLookup(teams);
+        if (!lookup.size) return;
+
+        offlineTeamLookup = lookup;
+        offlineTeamLookupPromise = Promise.resolve(lookup);
+    }
+
+    async function getOfflineTeamLookup() {
+        if (offlineTeamLookup) return offlineTeamLookup;
+        if (offlineTeamLookupPromise) return offlineTeamLookupPromise;
+
+        offlineTeamLookupPromise = (async () => {
+            try {
+                const res = await fetch("elimination_participants.json", { cache: "no-cache" });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const payload = await res.json();
+                const teams = Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.teams)
+                        ? payload.teams
+                        : [];
+
+                offlineTeamLookup = buildOfflineTeamLookup(teams);
+            } catch (err) {
+                console.warn("Failed to load offline team lookup", err);
+                offlineTeamLookup = new Map();
+            }
+
+            return offlineTeamLookup;
+        })();
+
+        return offlineTeamLookupPromise;
+    }
+
+    async function attachOfflineTeamToUser(user) {
+        if (!user || user.id === undefined || user.id === null) return user;
+
+        try {
+            const lookup = await getOfflineTeamLookup();
+            const playerId = Number(user.id);
+            const teamInfo = lookup.get(playerId) || null;
+
+            return {
+                ...user,
+                eliminationTeam: teamInfo
+            };
+        } catch (err) {
+            console.warn("Unable to attach offline team to user", err);
+            return {
+                ...user,
+                eliminationTeam: user.eliminationTeam ?? null
+            };
+        }
+    }
+
+    function formatUserTeamLabel(teamInfo) {
+        if (!teamInfo) return "Not listed in snapshot";
+
+        if (teamInfo.id && teamInfo.name) {
+            return `${teamInfo.name} [${teamInfo.id}]`;
+        }
+
+        if (teamInfo.name) return teamInfo.name;
+        if (teamInfo.id) return `ID ${teamInfo.id}`;
+
+        return "Not listed in snapshot";
     }
 
     function simplifyStatus(statusObj) {
