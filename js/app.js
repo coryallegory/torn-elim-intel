@@ -224,16 +224,28 @@
         });
     }
 
+    function getPlayerIdentifier(player) {
+        return player && player.player_id !== undefined && player.player_id !== null ? player.player_id : null;
+    }
+
     async function maybeFetchFfScouterStats(players) {
         if (!state.ffApiKeyValid || !state.ffapikey || !players.length) return;
-        const idsCsv = players.map(p => p.id).join(",");
+        const ids = players
+            .map(getPlayerIdentifier)
+            .filter(id => id !== null && id !== undefined);
+        if (!ids.length) return;
+
+        const idsCsv = ids.join(",");
 
         try {
             const data = await api.getFfStats(state.ffapikey, idsCsv);
             const statsMap = buildFfStatsMap(data);
             players.forEach(p => {
-                const val = statsMap.get(p.id);
-                if (val) {
+                const playerId = getPlayerIdentifier(p);
+                if (playerId === null || playerId === undefined) return;
+
+                const val = statsMap.get(playerId);
+                if (val !== undefined) {
                     p.bs_estimate_human = val;
                 }
             });
@@ -246,33 +258,25 @@
         const map = new Map();
         if (!resp || resp.error) return map;
 
-        const candidates = [resp.players, resp.data && resp.data.players, resp.data, resp.stats, resp.result];
-        candidates.forEach(container => {
-            if (!container) return;
-            if (Array.isArray(container)) {
-                container.forEach(entry => {
-                    const id = entry.player_id || entry.id || entry.user_id || entry.torn_id || entry.tornid;
-                    if (id === undefined || id === null) return;
-                    const bs = entry.bs_estimate_human || entry.bs_estimate || entry.bsEstimateHuman || entry.bs_estimate_human_text;
-                    if (bs !== undefined) {
-                        const numericId = parseInt(id, 10);
-                        map.set(Number.isNaN(numericId) ? id : numericId, bs);
-                    }
-                });
-            } else if (typeof container === "object") {
-                Object.entries(container).forEach(([key, value]) => {
-                    if (value && typeof value === "object") {
-                        const bs = value.bs_estimate_human || value.bs_estimate || value.bsEstimateHuman || value.bs_estimate_human_text;
-                        if (bs !== undefined) {
-                            const numericId = parseInt(key, 10);
-                            map.set(Number.isNaN(numericId) ? key : numericId, bs);
-                        }
-                    }
-                });
-            }
-        });
+        const entries = Array.isArray(resp)
+            ? resp
+            : Array.isArray(resp?.results)
+                ? resp.results
+                : Array.isArray(resp?.data)
+                    ? resp.data
+                    : [];
+
+        entries.forEach(entry => addStatEntryToMap(map, entry));
 
         return map;
+    }
+
+    function addStatEntryToMap(map, entry) {
+        const id = entry && entry.player_id;
+        const bs = entry && (entry.bs_estimate_human ?? entry.bs_estimate);
+        if (id === undefined || id === null || bs === undefined) return;
+
+        map.set(id, bs);
     }
 
     function renderTeams() {
