@@ -13,11 +13,18 @@
 
             <!-- API Key+User Box -->
             <div id="apikey-box">
-                <h2>API Key</h2>
+                <h2>Torn Public API Key</h2>
                 <div class="apikey-row">
                     <input type="text" id="apikey-input" placeholder="Enter API key">
                     <button id="apikey-apply">Apply</button>
                     <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
+                </div>
+
+                <h3>FFScouter API Key (optional)</h3>
+                <div class="apikey-row">
+                    <input type="text" id="ffapikey-input" placeholder="Enter FFScouter API key">
+                    <button id="ffapikey-apply">Apply</button>
+                    <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
                 </div>
 
                 <div id="userinfo-box" class="userinfo-box hidden">
@@ -94,6 +101,7 @@
                         <th>Status</th>
                         <th>Last Action</th>
                         <th>Attacks</th>
+                        <th>Est Battlestats</th>
                     </tr>
                 </thead>
                 <tbody id="player-table-body"></tbody>

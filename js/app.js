@@ -3,6 +3,9 @@
         apikeyInput: document.getElementById("apikey-input"),
         apikeyStatus: document.getElementById("apikey-status"),
         apikeyApply: document.getElementById("apikey-apply"),
+        ffapikeyInput: document.getElementById("ffapikey-input"),
+        ffapikeyStatus: document.getElementById("ffapikey-status"),
+        ffapikeyApply: document.getElementById("ffapikey-apply"),
         userBox: document.getElementById("userinfo-box"),
         userInfoContent: document.getElementById("user-info-content"),
         teamTableBody: document.getElementById("team-table-body"),
@@ -26,11 +29,18 @@
     function init() {
         state.loadFromStorage();
         dom.apikeyInput.value = state.apikey || "";
+        dom.ffapikeyInput.value = state.ffapikey || "";
 
         if (state.apikey) {
             validateAndStart();
         } else {
             showNoKey();
+        }
+
+        if (state.ffapikey) {
+            validateFfApiKey(true);
+        } else {
+            showNoFfKey();
         }
 
         dom.apikeyApply.addEventListener("click", () => {
@@ -41,6 +51,12 @@
             }
             state.saveApiKey(key);
             validateAndStart();
+        });
+
+        dom.ffapikeyApply.addEventListener("click", () => {
+            const key = dom.ffapikeyInput.value.trim();
+            state.saveFfApiKey(key);
+            validateFfApiKey();
         });
 
         attachFilterListeners();
@@ -79,6 +95,42 @@
     function showNoKey() {
         dom.apikeyStatus.textContent = "No API key loaded";
         dom.apikeyStatus.classList.add("status-error");
+    }
+
+    function showNoFfKey() {
+        state.ffApiKeyValid = false;
+        dom.ffapikeyStatus.textContent = "Not configured";
+        dom.ffapikeyStatus.classList.add("status-error");
+    }
+
+    async function validateFfApiKey(isInit = false) {
+        const key = state.ffapikey;
+        if (!key) {
+            showNoFfKey();
+            return;
+        }
+
+        dom.ffapikeyStatus.textContent = "Validating...";
+        dom.ffapikeyStatus.classList.remove("status-error");
+
+        const data = await api.checkFfKey(key);
+        const valid = data && !data.error && (data.valid === true || data.success === true || data.status === "ok" || data.ok === true || data.authorized === true || (!("valid" in data) && !("success" in data) && !data.status));
+
+        if (!valid) {
+            state.ffApiKeyValid = false;
+            dom.ffapikeyStatus.textContent = data && data.error ? "FFScouter key invalid" : "FFScouter key rejected";
+            dom.ffapikeyStatus.classList.add("status-error");
+            return;
+        }
+
+        state.ffApiKeyValid = true;
+        const label = data && (data.message || data.status_message || data.status) ? (data.message || data.status_message || data.status) : "FFScouter key accepted";
+        dom.ffapikeyStatus.textContent = label;
+        dom.ffapikeyStatus.classList.remove("status-error");
+
+        if (!isInit && state.selectedTeamId) {
+            refreshTeamPlayers(true);
+        }
     }
 
     async function refreshMetadata(force = false) {
@@ -164,6 +216,65 @@
         return null;
     }
 
+    function appendBsEstimatePlaceholders(players) {
+        players.forEach(p => {
+            if (p.bs_estimate_human === undefined) {
+                p.bs_estimate_human = "--";
+            }
+        });
+    }
+
+    async function maybeFetchFfScouterStats(players) {
+        if (!state.ffApiKeyValid || !state.ffapikey || !players.length) return;
+        const idsCsv = players.map(p => p.id).join(",");
+
+        try {
+            const data = await api.getFfStats(state.ffapikey, idsCsv);
+            const statsMap = buildFfStatsMap(data);
+            players.forEach(p => {
+                const val = statsMap.get(p.id);
+                if (val) {
+                    p.bs_estimate_human = val;
+                }
+            });
+        } catch (err) {
+            console.error("Failed to fetch FFScouter stats", err);
+        }
+    }
+
+    function buildFfStatsMap(resp) {
+        const map = new Map();
+        if (!resp || resp.error) return map;
+
+        const candidates = [resp.players, resp.data && resp.data.players, resp.data, resp.stats, resp.result];
+        candidates.forEach(container => {
+            if (!container) return;
+            if (Array.isArray(container)) {
+                container.forEach(entry => {
+                    const id = entry.player_id || entry.id || entry.user_id || entry.torn_id || entry.tornid;
+                    if (id === undefined || id === null) return;
+                    const bs = entry.bs_estimate_human || entry.bs_estimate || entry.bsEstimateHuman || entry.bs_estimate_human_text;
+                    if (bs !== undefined) {
+                        const numericId = parseInt(id, 10);
+                        map.set(Number.isNaN(numericId) ? id : numericId, bs);
+                    }
+                });
+            } else if (typeof container === "object") {
+                Object.entries(container).forEach(([key, value]) => {
+                    if (value && typeof value === "object") {
+                        const bs = value.bs_estimate_human || value.bs_estimate || value.bsEstimateHuman || value.bs_estimate_human_text;
+                        if (bs !== undefined) {
+                            const numericId = parseInt(key, 10);
+                            map.set(Number.isNaN(numericId) ? key : numericId, bs);
+                        }
+                    }
+                });
+            }
+        });
+
+        return map;
+    }
+
     function renderTeams() {
         const selected = state.selectedTeamId;
         dom.teamTableBody.innerHTML = "";
@@ -233,6 +344,8 @@
                 }
 
                 const arr = data.eliminationteam || [];
+                appendBsEstimatePlaceholders(arr);
+                await maybeFetchFfScouterStats(arr);
                 combined = combined.concat(arr);
 
                 if (arr.length < 100) {
@@ -369,6 +482,7 @@
                 <td class="status-cell ${statusClass}">${statusCellContent}</td>
                 <td>${p.last_action.relative}</td>
                 <td>${p.attacks}</td>
+                <td>${p.bs_estimate_human || "--"}</td>
             `;
 
             dom.playerTableBody.appendChild(row);

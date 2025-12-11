@@ -1,5 +1,7 @@
 window.state = {
     apikey: "",
+    ffapikey: "",
+    ffApiKeyValid: false,
     user: null,
     teams: [],
     selectedTeamId: null,
@@ -14,6 +16,7 @@ window.state = {
 
     loadFromStorage() {
         this.apikey = localStorage.getItem("apikey") || "";
+        this.ffapikey = localStorage.getItem("ffapikey") || "";
         try {
             const playersRaw = localStorage.getItem("teamPlayers");
             const playerTimestampsRaw = localStorage.getItem("teamPlayersTimestamp");
@@ -33,6 +36,11 @@ window.state = {
     saveApiKey(key) {
         this.apikey = key;
         localStorage.setItem("apikey", key);
+    },
+
+    saveFfApiKey(key) {
+        this.ffapikey = key;
+        localStorage.setItem("ffapikey", key);
     },
 
     cacheMetadata(user, teams) {
