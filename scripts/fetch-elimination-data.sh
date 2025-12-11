@@ -4,6 +4,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# If a .env file exists in the repo root, load it and export its variables.
+# This allows running the script directly without manually sourcing .env.
+ENV_FILE="$ROOT_DIR/.env"
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "${ENV_FILE}"
+  set +a
+fi
+
 if [[ -z "${API_KEY:-}" ]]; then
   echo "API_KEY environment variable is not set." >&2
   echo "Provide your Torn API key via API_KEY to fetch elimination data." >&2
