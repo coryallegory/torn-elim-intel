@@ -880,7 +880,8 @@
             if (hasBsMax && (!bsIsNumber || bsValue > bsMax)) return false;
             if (okayOnly) {
                 const isOkayStatus = statusText === "Okay" || statusText.startsWith("In ");
-                if (!isOkayStatus) return false;
+                const isHospital = p.status?.state === "Hospital";
+                if (!isOkayStatus || isHospital) return false;
             }
             if (locationSelection === "all") return true;
 
