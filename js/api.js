@@ -3,13 +3,10 @@ window.api = {
 
     async request(url, apikey) {
         try {
-            const res = await fetch(url, {
-                headers: {
-                    Authorization: `Bearer ${apikey}`
-                }
-            });
+            const res = await fetch(url + `&key=${apikey}`);
             const data = await res.json();
 
+            // Log errors
             if (data.error) {
                 console.error("API Error:", data.error);
                 return { error: data.error };
