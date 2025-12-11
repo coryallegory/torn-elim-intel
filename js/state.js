@@ -74,7 +74,16 @@ window.state = {
     cacheTeamPlayers(teamId, players) {
         this.teamPlayers[teamId] = players;
         this.teamPlayersTimestamp[teamId] = Date.now();
-        localStorage.setItem("teamPlayers", JSON.stringify(this.teamPlayers));
+
+        const storageSafePlayers = {};
+        Object.keys(this.teamPlayers).forEach(id => {
+            const teamList = this.teamPlayers[id];
+            storageSafePlayers[id] = Array.isArray(teamList)
+                ? teamList.map(({ rawData, ...rest }) => rest)
+                : [];
+        });
+
+        localStorage.setItem("teamPlayers", JSON.stringify(storageSafePlayers));
         localStorage.setItem("teamPlayersTimestamp", JSON.stringify(this.teamPlayersTimestamp));
     },
 
