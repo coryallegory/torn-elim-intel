@@ -91,6 +91,7 @@
     async function validateAndStart() {
         dom.apikeyStatus.textContent = "Validating...";
         dom.apikeyStatus.classList.remove("status-error");
+        state.setUserTeam(null);
 
         const data = await api.getUser(state.apikey);
         if (data.error || !data.profile) {
@@ -106,7 +107,8 @@
         dom.userBox.classList.remove("hidden");
 
         renderUserInfo();
-        refreshMetadata(true);
+        await refreshMetadata(true);
+        await preCacheTeamsAndUserTeam();
         startMetadataCountdown();
         startTeamCountdown();
     }
@@ -206,9 +208,13 @@
 
         const stateColor = mapStateColor(u.status.state);
         const statusText = simplifyStatus(u.status);
+        const teamText = state.userTeam
+            ? `Team: ${state.userTeam.name} [${state.userTeam.id}]`
+            : "Team: Not determined yet";
 
         dom.userInfoContent.innerHTML = `
             <div><strong>${u.name}</strong> [${u.level}]</div>
+            <div class="user-team-line">${teamText}</div>
             <div class="${stateColor}">${statusText}</div>
         `;
     }
@@ -671,13 +677,6 @@
         const teamId = state.selectedTeamId;
         if (!teamId) return;
 
-        const inFlight = teamFetchInFlight.get(teamId);
-        if (inFlight) {
-            await inFlight;
-            renderPlayers();
-            return;
-        }
-
         const now = Date.now();
         const lastStart = teamRefreshStart.get(teamId) || 0;
         const should = force || state.shouldRefreshTeam(teamId, now);
@@ -687,8 +686,27 @@
         }
 
         teamRefreshStart.set(teamId, now);
+        await fetchAndCacheTeamPlayers(teamId, { force: true, showSpinner: true });
+        renderPlayers();
+        updateUserTeamFromCache();
+    }
+
+    async function fetchAndCacheTeamPlayers(teamId, { force = false, showSpinner = true } = {}) {
+        const cachedPlayers = state.teamPlayers[teamId];
+        const hasCache = Array.isArray(cachedPlayers) && cachedPlayers.length > 0;
+        const hasTimestamp = Boolean(state.teamPlayersTimestamp[teamId]);
+        if (!force && (hasCache || hasTimestamp)) {
+            return cachedPlayers || [];
+        }
+
+        const inFlight = teamFetchInFlight.get(teamId);
+        if (inFlight) {
+            await inFlight;
+            return state.teamPlayers[teamId] || [];
+        }
+
         const fetchPromise = (async () => {
-            dom.teamIcon.classList.remove("hidden");
+            if (showSpinner) dom.teamIcon.classList.remove("hidden");
 
             let offset = 0;
             let combined = [];
@@ -716,18 +734,54 @@
                 }
             }
 
-            console.log(`Player refresh API calls: ${callCount}`);
+            console.log(`Player refresh API calls for team ${teamId}: ${callCount}`);
             state.cacheTeamPlayers(teamId, combined);
-            renderPlayers();
-            dom.teamIcon.classList.add("hidden");
+            return combined;
         })();
 
         teamFetchInFlight.set(teamId, fetchPromise);
         try {
-            await fetchPromise;
+            return await fetchPromise;
         } finally {
+            if (showSpinner) dom.teamIcon.classList.add("hidden");
             teamFetchInFlight.delete(teamId);
         }
+    }
+
+    async function preCacheTeamsAndUserTeam() {
+        if (!Array.isArray(state.teams) || !state.teams.length) return;
+
+        for (const team of state.teams) {
+            const hasCache = Boolean(state.teamPlayersTimestamp[team.id]);
+            const hasPlayers = Array.isArray(state.teamPlayers[team.id]) && state.teamPlayers[team.id].length > 0;
+            if (hasCache || hasPlayers) continue;
+
+            await fetchAndCacheTeamPlayers(team.id, { showSpinner: false });
+        }
+
+        updateUserTeamFromCache();
+    }
+
+    function updateUserTeamFromCache() {
+        if (!state.user) return null;
+
+        const userId = getPlayerIdentifier(state.user);
+        if (!userId) return null;
+
+        for (const team of state.teams || []) {
+            const players = state.teamPlayers[team.id] || [];
+            const match = players.find(p => getPlayerIdentifier(p) === userId);
+            if (match) {
+                const teamInfo = { id: team.id, name: team.name };
+                state.setUserTeam(teamInfo);
+                renderUserInfo();
+                return teamInfo;
+            }
+        }
+
+        state.setUserTeam(null);
+        renderUserInfo();
+        return null;
     }
 
     function applyFilters(players) {
