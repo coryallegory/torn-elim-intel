@@ -27,6 +27,7 @@ h2, h3 {
 .grouped-panel {
     position: relative;
     padding-top: 50px;
+    border: 1px solid #666;
 }
 
 .top-right {
@@ -56,6 +57,14 @@ h2, h3 {
 }
 
 input[type="text"], input[type="number"] {
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid #666;
+    background: #111;
+    color: #eee;
+}
+
+select {
     padding: 6px;
     border-radius: 4px;
     border: 1px solid #666;
@@ -125,8 +134,11 @@ tr.selected-row {
 .state-blue { color: #33aaff; }
 
 /* Box grouping user + team list */
+#meta-section {
+    margin-bottom: 20px;
+}
+
 .userinfo-box {
-    border: 1px solid #666;
     padding: 8px;
     margin-top: 10px;
 }
