@@ -502,7 +502,7 @@
             }
 
             row.innerHTML = `
-                <td>${p.id}</td>
+                <td><a href="https://www.torn.com/profiles.php?XID=${p.id}" target="_blank" rel="noopener noreferrer">${p.id}</a></td>
                 <td>${p.name}</td>
                 <td>${p.level}</td>
                 <td class="status-cell ${statusClass}">${statusCellContent}</td>
