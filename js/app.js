@@ -1086,10 +1086,10 @@
     }
 
     function attachFilterListeners() {
-        dom.levelMinInput.addEventListener("change", renderPlayers);
-        dom.levelMaxInput.addEventListener("change", renderPlayers);
-        dom.bsMinInput.addEventListener("change", renderPlayers);
-        dom.bsMaxInput.addEventListener("change", renderPlayers);
+        dom.levelMinInput.addEventListener("input", renderPlayers);
+        dom.levelMaxInput.addEventListener("input", renderPlayers);
+        dom.bsMinInput.addEventListener("input", renderPlayers);
+        dom.bsMaxInput.addEventListener("input", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
         dom.locationFilter.addEventListener("change", renderPlayers);
     }
