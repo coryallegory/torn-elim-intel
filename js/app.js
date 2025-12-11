@@ -9,7 +9,9 @@
         userBox: document.getElementById("userinfo-box"),
         userInfoContent: document.getElementById("user-info-content"),
         teamTableBody: document.getElementById("team-table-body"),
+        teamTableHeaders: document.querySelectorAll("#team-table thead th[data-col]"),
         playerTableBody: document.getElementById("player-table-body"),
+        playerTableHeaders: document.querySelectorAll("#player-table thead th[data-col]"),
         levelMinInput: document.getElementById("level-min"),
         levelMaxInput: document.getElementById("level-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
@@ -23,6 +25,10 @@
     const intervals = { metadata: null, team: null, countdown: null };
     const teamFetchInFlight = new Map();
     const teamRefreshStart = new Map();
+    const sortState = {
+        team: { column: null, direction: "asc" },
+        player: { column: null, direction: "asc" }
+    };
     let metadataRefreshInFlight = null;
     let metadataRefreshStart = 0;
 
@@ -60,6 +66,7 @@
         });
 
         attachFilterListeners();
+        attachSortListeners();
     }
 
     async function validateAndStart() {
@@ -300,11 +307,153 @@
         map.set(id, bs);
     }
 
+    function attachSortListeners() {
+        addSortListeners(dom.teamTableHeaders, "team");
+        addSortListeners(dom.playerTableHeaders, "player");
+    }
+
+    function addSortListeners(headers, tableType) {
+        headers.forEach(th => {
+            th.classList.add("sortable");
+            th.addEventListener("click", () => handleSort(tableType, th.getAttribute("data-col")));
+        });
+
+        updateSortIndicators(tableType);
+    }
+
+    function handleSort(tableType, column) {
+        const stateRef = sortState[tableType];
+        if (!stateRef || !column) return;
+
+        if (stateRef.column === column) {
+            stateRef.direction = stateRef.direction === "asc" ? "desc" : "asc";
+        } else {
+            stateRef.column = column;
+            stateRef.direction = "asc";
+        }
+
+        if (tableType === "team") {
+            renderTeams();
+        } else {
+            renderPlayers();
+        }
+    }
+
+    function updateSortIndicators(tableType) {
+        const headers = tableType === "team" ? dom.teamTableHeaders : dom.playerTableHeaders;
+        const { column, direction } = sortState[tableType];
+
+        headers.forEach(th => {
+            th.classList.remove("sorted-asc", "sorted-desc");
+            const thCol = th.getAttribute("data-col");
+            if (thCol && thCol === column) {
+                th.classList.add(direction === "asc" ? "sorted-asc" : "sorted-desc");
+            }
+        });
+    }
+
+    function sortTeamsList(teams) {
+        const { column, direction } = sortState.team;
+        if (!column) return [...teams];
+
+        return [...teams].sort((a, b) => compareValues(
+            getTeamSortValue(a, column),
+            getTeamSortValue(b, column),
+            direction
+        ));
+    }
+
+    function getTeamSortValue(team, column) {
+        switch (column) {
+            case "name":
+                return (team.name || "").toLowerCase();
+            case "eliminated":
+                return team.eliminated ? 1 : 0;
+            default:
+                return team[column];
+        }
+    }
+
+    function sortPlayersList(players) {
+        const { column, direction } = sortState.player;
+        if (!column) return [...players];
+
+        return [...players].sort((a, b) => compareValues(
+            getPlayerSortValue(a, column),
+            getPlayerSortValue(b, column),
+            direction
+        ));
+    }
+
+    function getPlayerSortValue(player, column) {
+        switch (column) {
+            case "name":
+                return (player.name || "").toLowerCase();
+            case "status":
+                return simplifyStatus(player.status).toLowerCase();
+            case "last_action":
+                if (player.last_action && player.last_action.timestamp !== undefined) {
+                    return player.last_action.timestamp;
+                }
+                return player.last_action?.relative || null;
+            case "bs_estimate_human":
+                return parseBattlestatValue(player.bs_estimate_human);
+            case "id":
+            case "level":
+            case "attacks":
+                return Number(player[column]);
+            default:
+                return player[column];
+        }
+    }
+
+    function parseBattlestatValue(value) {
+        if (value === undefined || value === null || value === "--") return null;
+        if (typeof value === "number") return value;
+        if (typeof value !== "string") return value;
+
+        const cleaned = value.replace(/,/g, "").trim();
+        const lower = cleaned.toLowerCase();
+        let multiplier = 1;
+
+        if (lower.endsWith("b")) multiplier = 1e9;
+        else if (lower.endsWith("m")) multiplier = 1e6;
+        else if (lower.endsWith("k")) multiplier = 1e3;
+
+        const numeric = parseFloat(cleaned);
+        if (Number.isNaN(numeric)) return lower;
+        return numeric * multiplier;
+    }
+
+    function compareValues(a, b, direction) {
+        const multiplier = direction === "asc" ? 1 : -1;
+
+        if (a === b) return 0;
+        if (a === null || a === undefined) return 1;
+        if (b === null || b === undefined) return -1;
+
+        const aNum = typeof a === "number" ? a : Number(a);
+        const bNum = typeof b === "number" ? b : Number(b);
+        const aIsNum = !Number.isNaN(aNum);
+        const bIsNum = !Number.isNaN(bNum);
+
+        if (aIsNum && bIsNum) {
+            if (aNum === bNum) return 0;
+            return aNum > bNum ? multiplier : -multiplier;
+        }
+
+        const aStr = a.toString();
+        const bStr = b.toString();
+        return aStr.localeCompare(bStr, undefined, { numeric: true, sensitivity: "base" }) * multiplier;
+    }
+
     function renderTeams() {
         const selected = state.selectedTeamId;
         dom.teamTableBody.innerHTML = "";
 
-        for (const t of state.teams) {
+        const teams = sortTeamsList(state.teams);
+
+        for (const t of teams) {
             const row = document.createElement("tr");
             if (t.id === selected) row.classList.add("selected-row");
 
@@ -323,6 +472,8 @@
             row.addEventListener("click", () => handleTeamSelect(t.id));
             dom.teamTableBody.appendChild(row);
         }
+
+        updateSortIndicators("team");
     }
 
     async function handleTeamSelect(teamId) {
@@ -472,12 +623,14 @@
         const teamId = state.selectedTeamId;
         if (!teamId) {
             dom.playerTableBody.innerHTML = "";
+            updateSortIndicators("player");
             return;
         }
 
         const players = state.teamPlayers[teamId] || [];
         updateLocationFilterOptions(players);
         const filtered = applyFilters(players);
+        const sortedPlayers = sortPlayersList(filtered);
 
         const scrollContainer = dom.playerTableBody.parentElement;
         const prevScroll = scrollContainer ? scrollContainer.scrollTop : 0;
@@ -486,7 +639,7 @@
 
         const nowSec = Math.floor(Date.now() / 1000);
 
-        for (const p of filtered) {
+        for (const p of sortedPlayers) {
             const row = document.createElement("tr");
             const baseStatusText = simplifyStatus(p.status);
             const hospitalUntil = p.status.until;
@@ -516,6 +669,7 @@
 
         if (scrollContainer) scrollContainer.scrollTop = prevScroll;
         startCountdownUpdater();
+        updateSortIndicators("player");
     }
 
     function startCountdownUpdater() {

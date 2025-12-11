@@ -92,8 +92,29 @@ table {
 
 th {
     background: #444;
-    cursor: pointer;
     padding: 8px;
+}
+
+th.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    padding-right: 16px;
+}
+
+th.sortable::after {
+    content: "";
+    position: absolute;
+    right: 6px;
+    color: #ccc;
+}
+
+th.sorted-asc::after {
+    content: "▲";
+}
+
+th.sorted-desc::after {
+    content: "▼";
 }
 
 td {
