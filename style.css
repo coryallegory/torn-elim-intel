@@ -95,6 +95,13 @@ th {
     padding: 8px;
 }
 
+#player-table a,
+#player-table a:visited,
+#player-table a:hover {
+    color: inherit;
+    text-decoration: underline;
+}
+
 th.sortable {
     cursor: pointer;
     position: relative;
