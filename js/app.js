@@ -14,6 +14,8 @@
         playerTableHeaders: document.querySelectorAll("#player-table thead th[data-col]"),
         levelMinInput: document.getElementById("level-min"),
         levelMaxInput: document.getElementById("level-max"),
+        bsMinInput: document.getElementById("bs-min"),
+        bsMaxInput: document.getElementById("bs-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
         locationFilter: document.getElementById("location-filter"),
         metadataTimerLabel: document.getElementById("metadata-refresh-timer"),
@@ -385,12 +387,15 @@
 
         const { rawData, location, ...rest } = player;
         const canonicalLocation = player.location ?? determinePlayerLocation(player.status);
+        const bsEstimateHuman = player.bs_estimate_human === undefined ? "--" : player.bs_estimate_human;
+        const bsEstimateNumeric = deriveBsEstimateNumber(player);
 
         return {
             ...player,
             location: canonicalLocation,
             rawData: rawData || { ...rest },
-            bs_estimate_human: player.bs_estimate_human === undefined ? "--" : player.bs_estimate_human
+            bs_estimate_human: bsEstimateHuman,
+            bs_estimate: bsEstimateNumeric
         };
     }
 
@@ -432,6 +437,7 @@
                 const val = statsMap.get(numericId);
                 if (val !== undefined) {
                     p.bs_estimate_human = val;
+                    p.bs_estimate = deriveBsEstimateNumber(p);
                 }
             });
         } catch (err) {
@@ -582,6 +588,20 @@
         return numeric * multiplier;
     }
 
+    function deriveBsEstimateNumber(player) {
+        const parsedDirect = parseBattlestatValue(player?.bs_estimate);
+        if (typeof parsedDirect === "number" && !Number.isNaN(parsedDirect)) {
+            return parsedDirect;
+        }
+
+        const parsedHuman = parseBattlestatValue(player?.bs_estimate_human);
+        if (typeof parsedHuman === "number" && !Number.isNaN(parsedHuman)) {
+            return parsedHuman;
+        }
+
+        return null;
+    }
+
     function compareValues(a, b, direction) {
         const multiplier = direction === "asc" ? 1 : -1;
 
@@ -705,13 +725,24 @@
     function applyFilters(players) {
         const levelMin = parseInt(dom.levelMinInput.value || 0, 10);
         const levelMax = parseInt(dom.levelMaxInput.value || 100, 10);
+        const bsMinInputVal = dom.bsMinInput.value.trim();
+        const bsMaxInputVal = dom.bsMaxInput.value.trim();
+        const bsMin = parseBattlestatValue(bsMinInputVal);
+        const bsMax = parseBattlestatValue(bsMaxInputVal);
         const okayOnly = dom.filterOkayOnly.checked;
         const locationSelection = dom.locationFilter.value;
+
+        const hasBsMin = bsMinInputVal !== "" && typeof bsMin === "number" && !Number.isNaN(bsMin);
+        const hasBsMax = bsMaxInputVal !== "" && typeof bsMax === "number" && !Number.isNaN(bsMax);
 
         return players.filter(p => {
             const st = p.status?.state;
             const playerLocation = p.location;
             if (p.level < levelMin || p.level > levelMax) return false;
+            const bsValue = typeof p.bs_estimate === "number" ? p.bs_estimate : parseBattlestatValue(p.bs_estimate);
+            const bsIsNumber = typeof bsValue === "number" && !Number.isNaN(bsValue);
+            if (hasBsMin && (!bsIsNumber || bsValue < bsMin)) return false;
+            if (hasBsMax && (!bsIsNumber || bsValue > bsMax)) return false;
             if (okayOnly && st === "Hospital") return false;
             if (locationSelection === "all") return true;
 
@@ -835,6 +866,7 @@
                 <td>${p.last_action.relative}</td>
                 <td>${p.attacks}</td>
                 <td>${p.bs_estimate_human || "--"}</td>
+                <td class="hidden raw-data-cell">${JSON.stringify(p.rawData || {}, null, 0)}</td>
             `;
 
             const rawCell = document.createElement("td");
@@ -903,6 +935,8 @@
     function attachFilterListeners() {
         dom.levelMinInput.addEventListener("change", renderPlayers);
         dom.levelMaxInput.addEventListener("change", renderPlayers);
+        dom.bsMinInput.addEventListener("change", renderPlayers);
+        dom.bsMaxInput.addEventListener("change", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
         dom.locationFilter.addEventListener("change", renderPlayers);
     }

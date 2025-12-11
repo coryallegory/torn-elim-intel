@@ -73,11 +73,16 @@
 
             <!-- Filters -->
             <div id="player-filters">
-                <label>Level min:
-                    <input type="number" id="level-min" value="0">
+                <label class="range-label">Level:
+                    <input type="number" id="level-min" class="range-input" value="0">
+                    to
+                    <input type="number" id="level-max" class="range-input" value="100">
                 </label>
-                <label>Level max:
-                    <input type="number" id="level-max" value="100">
+
+                <label class="range-label">BStats:
+                    <input type="text" id="bs-min" class="range-input" placeholder="min">
+                    to
+                    <input type="text" id="bs-max" class="range-input" placeholder="max">
                 </label>
 
                 <label>
@@ -102,6 +107,7 @@
                         <th data-col="last_action">Last Action</th>
                         <th data-col="attacks">Attacks</th>
                         <th data-col="bs_estimate_human">Est Battlestats</th>
+                        <th class="hidden raw-data-column">Raw Data</th>
                     </tr>
                 </thead>
                 <tbody id="player-table-body"></tbody>
