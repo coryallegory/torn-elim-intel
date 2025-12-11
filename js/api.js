@@ -1,12 +1,15 @@
-window.TornAPI = {
+window.api = {
     BASE: "https://api.torn.com/v2",
 
     async request(url, apikey) {
         try {
-            const res = await fetch(url + `&key=${apikey}`);
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${apikey}`
+                }
+            });
             const data = await res.json();
 
-            // Log errors
             if (data.error) {
                 console.error("API Error:", data.error);
                 return { error: data.error };
@@ -20,11 +23,11 @@ window.TornAPI = {
     },
 
     getUser(apikey) {
-        return this.request(`${this.BASE}/user/?selections=profile`, apikey);
+        return this.request(`${this.BASE}/user/profile`, apikey);
     },
 
     getTeams(apikey) {
-        return this.request(`${this.BASE}/torn/elimination/?elimination=true`, apikey);
+        return this.request(`${this.BASE}/torn/elimination`, apikey);
     },
 
     getTeamPlayers(teamId, offset, apikey) {
@@ -34,3 +37,6 @@ window.TornAPI = {
         );
     }
 };
+
+// legacy handle
+window.TornAPI = window.api;
