@@ -224,16 +224,35 @@
         });
     }
 
+    function getPlayerIdentifier(player) {
+        const candidates = ["id", "player_id", "user_id", "torn_id", "tornid"];
+        for (const key of candidates) {
+            if (player[key] !== undefined && player[key] !== null) {
+                return player[key];
+            }
+        }
+        return null;
+    }
+
     async function maybeFetchFfScouterStats(players) {
         if (!state.ffApiKeyValid || !state.ffapikey || !players.length) return;
-        const idsCsv = players.map(p => p.id).join(",");
+        const ids = players
+            .map(getPlayerIdentifier)
+            .filter(id => id !== null && id !== undefined);
+        if (!ids.length) return;
+
+        const idsCsv = ids.join(",");
 
         try {
             const data = await api.getFfStats(state.ffapikey, idsCsv);
             const statsMap = buildFfStatsMap(data);
             players.forEach(p => {
-                const val = statsMap.get(p.id);
-                if (val) {
+                const playerId = getPlayerIdentifier(p);
+                if (playerId === null || playerId === undefined) return;
+
+                const numericId = parseInt(playerId, 10);
+                const val = statsMap.get(playerId) || (!Number.isNaN(numericId) ? statsMap.get(numericId) : undefined);
+                if (val !== undefined) {
                     p.bs_estimate_human = val;
                 }
             });
