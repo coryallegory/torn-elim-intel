@@ -14,15 +14,21 @@
 
             <!-- API Key+User Box -->
             <div id="apikey-box">
-                <h2>Torn Public API Key</h2>
                 <div class="apikey-row">
+                    <div class="apikey-label">
+                        <span class="apikey-title">Torn Public API Key</span>
+                        <span class="apikey-subtext">Required for all data</span>
+                    </div>
                     <input type="text" id="apikey-input" placeholder="Enter API key">
                     <button id="apikey-apply">Apply</button>
                     <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
                 </div>
 
-                <h3>FFScouter API Key (optional)</h3>
                 <div class="apikey-row">
+                    <div class="apikey-label">
+                        <span class="apikey-title">FFScouter API Key (for Est Battle Stats)</span>
+                        <span class="apikey-subtext">Optional, used for stat estimates</span>
+                    </div>
                     <input type="text" id="ffapikey-input" placeholder="Enter FFScouter API key">
                     <button id="ffapikey-apply">Apply</button>
                     <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
