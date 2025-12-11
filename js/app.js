@@ -20,6 +20,9 @@
 
     const intervals = { metadata: null, team: null, countdown: null };
     const teamFetchInFlight = new Map();
+    const teamRefreshStart = new Map();
+    let metadataRefreshInFlight = null;
+    let metadataRefreshStart = 0;
 
     function init() {
         state.loadFromStorage();
@@ -80,29 +83,44 @@
     }
 
     async function refreshMetadata(force = false) {
+        if (metadataRefreshInFlight) {
+            await metadataRefreshInFlight;
+            return;
+        }
+
         const now = Date.now();
         if (!force && !state.shouldRefreshMetadata(now)) return;
-        if (now - state.metadataTimestamp < state.MIN_REFRESH_MS) return;
+        if (now - metadataRefreshStart < state.MIN_REFRESH_MS) return;
 
+        metadataRefreshStart = now;
         dom.metadataIcon.classList.remove("hidden");
 
-        const [userData, teamData] = await Promise.all([
-            api.getUser(state.apikey),
-            api.getTeams(state.apikey)
-        ]);
+        const refreshPromise = (async () => {
+            const [userData, teamData] = await Promise.all([
+                api.getUser(state.apikey),
+                api.getTeams(state.apikey)
+            ]);
 
-        if (!userData.error && userData.profile) {
-            state.user = userData.profile;
-            renderUserInfo();
+            if (!userData.error && userData.profile) {
+                state.user = userData.profile;
+                renderUserInfo();
+            }
+
+            if (!teamData.error && teamData.elimination) {
+                state.teams = teamData.elimination;
+                renderTeams();
+            }
+
+            state.cacheMetadata(state.user, state.teams);
+            dom.metadataIcon.classList.add("hidden");
+        })();
+
+        metadataRefreshInFlight = refreshPromise;
+        try {
+            await refreshPromise;
+        } finally {
+            metadataRefreshInFlight = null;
         }
-
-        if (!teamData.error && teamData.elimination) {
-            state.teams = teamData.elimination;
-            renderTeams();
-        }
-
-        state.cacheMetadata(state.user, state.teams);
-        dom.metadataIcon.classList.add("hidden");
     }
 
     function renderUserInfo() {
@@ -158,7 +176,7 @@
     async function handleTeamSelect(teamId) {
         state.selectedTeamId = teamId;
         renderTeams();
-        await refreshTeamPlayers(true);
+        await refreshTeamPlayers(false);
     }
 
     async function refreshTeamPlayers(force = false) {
@@ -173,12 +191,14 @@
         }
 
         const now = Date.now();
+        const lastStart = teamRefreshStart.get(teamId) || 0;
         const should = force || state.shouldRefreshTeam(teamId, now);
-        if (!should || now - (state.teamPlayersTimestamp[teamId] || 0) < state.MIN_REFRESH_MS) {
+        if (!should || now - lastStart < state.MIN_REFRESH_MS) {
             renderPlayers();
             return;
         }
 
+        teamRefreshStart.set(teamId, now);
         const fetchPromise = (async () => {
             dom.teamIcon.classList.remove("hidden");
 
@@ -347,8 +367,12 @@
             const last = state.teamPlayersTimestamp[teamId] || 0;
             const remaining = state.TEAM_REFRESH_MS - (Date.now() - last);
             dom.teamTimerLabel.textContent = `Next refresh: ${Math.max(0, Math.floor(remaining / 1000))}s`;
-            if (remaining <= 0) refreshTeamPlayers();
+            if (remaining <= 0 && isTeamSectionVisible()) refreshTeamPlayers();
         }, 1000);
+    }
+
+    function isTeamSectionVisible() {
+        return !dom.playerTableBody.closest("section").classList.contains("hidden");
     }
 
     window.app = {
