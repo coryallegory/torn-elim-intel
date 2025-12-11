@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Torn Elimination Intel</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -35,23 +36,25 @@
             <!-- TEAM LIST -->
             <div id="team-container">
                 <h2>Teams</h2>
-                <table id="team-table">
-                    <thead>
-                        <tr>
-                            <th data-col="id">ID</th>
-                            <th data-col="name">Name</th>
-                            <th data-col="participants">Participants</th>
-                            <th data-col="score">Score</th>
-                            <th data-col="wins">Wins</th>
-                            <th data-col="losses">Losses</th>
-                            <th data-col="lives">Lives</th>
-                            <th data-col="position">Position</th>
-                            <th data-col="eliminated">Eliminated</th>
-                        </tr>
-                    </thead>
+                <div class="table-wrapper">
+                    <table id="team-table">
+                        <thead>
+                            <tr>
+                                <th data-col="id">ID</th>
+                                <th data-col="name">Name</th>
+                                <th data-col="participants">Participants</th>
+                                <th data-col="score">Score</th>
+                                <th data-col="wins">Wins</th>
+                                <th data-col="losses">Losses</th>
+                                <th data-col="lives">Lives</th>
+                                <th data-col="position">Position</th>
+                                <th data-col="eliminated">Eliminated</th>
+                            </tr>
+                        </thead>
 
-                    <tbody id="team-table-body"></tbody>
-                </table>
+                        <tbody id="team-table-body"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Shared metadata refresh indicator -->
@@ -97,21 +100,23 @@
                 </label>
             </div>
 
-            <table id="player-table">
-                <thead>
-                    <tr>
-                        <th data-col="id">ID</th>
-                        <th data-col="name">Name</th>
-                        <th data-col="level">Level</th>
-                        <th data-col="status">Status</th>
-                        <th data-col="last_action">Last Action</th>
-                        <th data-col="attacks">Attacks</th>
-                        <th data-col="bs_estimate_human">Est Battlestats</th>
-                        <th class="hidden raw-data-column">Raw Data</th>
-                    </tr>
-                </thead>
-                <tbody id="player-table-body"></tbody>
-            </table>
+            <div class="table-wrapper">
+                <table id="player-table">
+                    <thead>
+                        <tr>
+                            <th data-col="id">ID</th>
+                            <th data-col="name">Name</th>
+                            <th data-col="level">Level</th>
+                            <th data-col="status">Status</th>
+                            <th data-col="last_action">Last Action</th>
+                            <th data-col="attacks">Attacks</th>
+                            <th data-col="bs_estimate_human">Est Battlestats</th>
+                            <th class="hidden raw-data-column">Raw Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-table-body"></tbody>
+                </table>
+            </div>
         </section>
 
     </div>
