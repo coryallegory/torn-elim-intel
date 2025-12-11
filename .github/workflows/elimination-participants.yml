@@ -1,0 +1,122 @@
+name: Update elimination participants
+
+on:
+  workflow_dispatch:
+    inputs:
+      api-key-secret:
+        description: "Name of the repository secret that stores the Torn API key"
+        required: false
+        default: "TORN_API_KEY"
+
+jobs:
+  fetch-elimination-participants:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build elimination participants file
+        env:
+          API_KEY: ${{ secrets[inputs.api-key-secret] }}
+        run: |
+          if [ -z "$API_KEY" ]; then
+            echo "API key secret \"${{ inputs.api-key-secret }}\" is not set." >&2
+            exit 1
+          fi
+
+          mkdir -p scripts
+
+          cat > scripts/generate-elimination.js <<'NODE'
+          const fs = require('fs');
+
+          const API_BASE = 'https://api.torn.com/v2';
+          const API_KEY = process.env.API_KEY;
+          const PAGE_SIZE = 100;
+
+          async function request(path) {
+            const res = await fetch(`${API_BASE}${path}`, {
+              headers: {
+                Accept: 'application/json',
+                Authorization: `ApiKey ${API_KEY}`
+              }
+            });
+
+            if (!res.ok) {
+              throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+            }
+
+            const data = await res.json();
+            if (data.error) {
+              const errMsg = data.error.error || JSON.stringify(data.error);
+              throw new Error(`API error: ${errMsg}`);
+            }
+            return data;
+          }
+
+          async function fetchTeams() {
+            const data = await request('/torn/elimination');
+            return Array.isArray(data.elimination) ? data.elimination : [];
+          }
+
+          async function fetchTeamMembers(teamId) {
+            let offset = 0;
+            const members = [];
+
+            while (true) {
+              const data = await request(`/torn/${teamId}/eliminationteam?limit=${PAGE_SIZE}&offset=${offset}`);
+              const batch = Array.isArray(data.eliminationteam) ? data.eliminationteam : [];
+
+              members.push(
+                ...batch.map(player => ({
+                  id: player.player_id ?? player.id,
+                  name: player.name,
+                  level: player.level,
+                  status: player.status ?? null
+                }))
+              );
+
+              if (batch.length < PAGE_SIZE) break;
+              offset += PAGE_SIZE;
+            }
+
+            return members;
+          }
+
+          async function main() {
+            const teams = await fetchTeams();
+            const summary = [];
+
+            for (const team of teams) {
+              const members = await fetchTeamMembers(team.id);
+              summary.push({
+                id: team.id,
+                name: team.name,
+                eliminated: Boolean(team.eliminated),
+                alive: team.alive,
+                members
+              });
+            }
+
+            const outPath = 'elimination_participants.json';
+            fs.writeFileSync(outPath, JSON.stringify(summary, null, 2));
+            console.log(`Wrote ${summary.length} teams to ${outPath}`);
+          }
+
+          main().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
+
+          node scripts/generate-elimination.js
+
+      - name: Upload elimination data
+        uses: actions/upload-artifact@v4
+        with:
+          name: elimination_participants
+          path: elimination_participants.json
