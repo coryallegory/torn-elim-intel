@@ -61,7 +61,7 @@ window.api = {
     },
 
     getFfStats(key, playerIdsCsv) {
-        return this.requestFf(`${this.FF_BASE}/get-stats?key=${encodeURIComponent(key)}&ids=${encodeURIComponent(playerIdsCsv)}`);
+        return this.requestFf(`${this.FF_BASE}/get-stats?key=${encodeURIComponent(key)}&targets=${encodeURIComponent(playerIdsCsv)}`);
     }
 };
 
