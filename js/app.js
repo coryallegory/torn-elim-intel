@@ -1,124 +1,117 @@
 (function () {
-    // DOM refs
-    const apikeyInput = document.getElementById("apikey-input");
-    const apikeyStatus = document.getElementById("apikey-status");
-    const apikeyApply = document.getElementById("apikey-apply");
+    const dom = {
+        apikeyInput: document.getElementById("apikey-input"),
+        apikeyStatus: document.getElementById("apikey-status"),
+        apikeyApply: document.getElementById("apikey-apply"),
+        userBox: document.getElementById("userinfo-box"),
+        userInfoContent: document.getElementById("user-info-content"),
+        teamTableBody: document.getElementById("team-table-body"),
+        playerTableBody: document.getElementById("player-table-body"),
+        levelMinInput: document.getElementById("level-min"),
+        levelMaxInput: document.getElementById("level-max"),
+        filterOkayOnly: document.getElementById("filter-okay-only"),
+        filterTraveling: document.getElementById("filter-include-traveling"),
+        filterAbroad: document.getElementById("filter-include-abroad"),
+        metadataTimerLabel: document.getElementById("metadata-refresh-timer"),
+        metadataIcon: document.getElementById("metadata-refresh-icon"),
+        teamTimerLabel: document.getElementById("team-refresh-timer"),
+        teamIcon: document.getElementById("team-refresh-icon")
+    };
 
-    const userBox = document.getElementById("userinfo-box");
-    const userInfoContent = document.getElementById("user-info-content");
+    const intervals = { metadata: null, team: null, countdown: null };
 
-    const teamTableBody = document.getElementById("team-table-body");
+    function init() {
+        state.loadFromStorage();
+        dom.apikeyInput.value = state.apikey || "";
 
-    const playerTableBody = document.getElementById("player-table-body");
-    const levelMinInput = document.getElementById("level-min");
-    const levelMaxInput = document.getElementById("level-max");
-    const filterOkayOnly = document.getElementById("filter-okay-only");
-    const filterTraveling = document.getElementById("filter-include-traveling");
-    const filterAbroad = document.getElementById("filter-include-abroad");
-
-    const metadataTimerLabel = document.getElementById("metadata-refresh-timer");
-    const metadataIcon = document.getElementById("metadata-refresh-icon");
-
-    const teamTimerLabel = document.getElementById("team-refresh-timer");
-    const teamIcon = document.getElementById("team-refresh-icon");
-
-    // --------------------------
-    // Initialization
-    // --------------------------
-    AppState.loadFromStorage();
-    apikeyInput.value = AppState.apikey || "";
-
-    if (AppState.apikey) {
-        validateAndStart();
-    } else {
-        apikeyStatus.textContent = "No API key loaded";
-        apikeyStatus.classList.add("status-error");
-    }
-
-    apikeyApply.addEventListener("click", () => {
-        const key = apikeyInput.value.trim();
-        if (!key) {
-            apikeyStatus.textContent = "No API key loaded";
-            apikeyStatus.classList.add("status-error");
-            return;
-        }
-        AppState.saveApiKey(key);
-        validateAndStart();
-    });
-
-    // --------------------------
-    // Validation and bootstrap
-    // --------------------------
-    async function validateAndStart() {
-        apikeyStatus.textContent = "Validating...";
-        apikeyStatus.classList.remove("status-error");
-
-        const data = await TornAPI.getUser(AppState.apikey);
-        if (data.error) {
-            apikeyStatus.textContent = "API key invalid";
-            apikeyStatus.classList.add("status-error");
-            return;
+        if (state.apikey) {
+            validateAndStart();
+        } else {
+            showNoKey();
         }
 
-        AppState.user = data.profile;
-        apikeyStatus.textContent = "API key loaded";
-        apikeyStatus.classList.remove("status-error");
-        userBox.classList.remove("hidden");
-
-        renderUserInfo();
-
-        // Start refresh cycles
-        refreshMetadata(true);
-        startMetadataCountdown();
-        startTeamCountdown();
+        dom.apikeyApply.addEventListener("click", () => {
+            const key = dom.apikeyInput.value.trim();
+            if (!key) {
+                showNoKey();
+                return;
+            }
+            state.saveApiKey(key);
+            validateAndStart();
+        });
 
         attachFilterListeners();
     }
 
-    // --------------------------
-    // Metadata Refresh (User + Teams)
-    // --------------------------
-    async function refreshMetadata(force = false) {
-        if (!force && !AppState.shouldRefreshMetadata()) return;
+    async function validateAndStart() {
+        dom.apikeyStatus.textContent = "Validating...";
+        dom.apikeyStatus.classList.remove("status-error");
 
-        metadataIcon.classList.remove("hidden");
-
-        const [userData, teamData] = await Promise.all([
-            TornAPI.getUser(AppState.apikey),
-            TornAPI.getTeams(AppState.apikey)
-        ]);
-
-        // user
-        if (!userData.error) {
-            AppState.user = userData.profile;
-            renderUserInfo();
-        } else {
-            console.error("User fetch error:", userData.error);
+        const data = await api.getUser(state.apikey);
+        if (data.error || !data.profile) {
+            dom.apikeyStatus.textContent = "API key invalid";
+            dom.apikeyStatus.classList.add("status-error");
+            stopIntervals();
+            return;
         }
 
-        // teams
-        if (!teamData.error && teamData.elimination) {
-            AppState.teams = teamData.elimination;
-            renderTeams();
-        } else {
-            console.error("Team fetch error:", teamData.error);
-        }
+        state.user = data.profile;
+        dom.apikeyStatus.textContent = "API key loaded";
+        dom.apikeyStatus.classList.remove("status-error");
+        dom.userBox.classList.remove("hidden");
 
-        AppState.metadataTimestamp = Date.now();
-        metadataIcon.classList.add("hidden");
+        renderUserInfo();
+        refreshMetadata(true);
+        startMetadataCountdown();
+        startTeamCountdown();
     }
 
-    // --------------------------
-    // User Info UI
-    // --------------------------
+    function stopIntervals() {
+        if (intervals.metadata) clearInterval(intervals.metadata);
+        if (intervals.team) clearInterval(intervals.team);
+        if (intervals.countdown) clearInterval(intervals.countdown);
+        intervals.metadata = intervals.team = intervals.countdown = null;
+    }
+
+    function showNoKey() {
+        dom.apikeyStatus.textContent = "No API key loaded";
+        dom.apikeyStatus.classList.add("status-error");
+    }
+
+    async function refreshMetadata(force = false) {
+        const now = Date.now();
+        if (!force && !state.shouldRefreshMetadata(now)) return;
+        if (now - state.metadataTimestamp < state.MIN_REFRESH_MS) return;
+
+        dom.metadataIcon.classList.remove("hidden");
+
+        const [userData, teamData] = await Promise.all([
+            api.getUser(state.apikey),
+            api.getTeams(state.apikey)
+        ]);
+
+        if (!userData.error && userData.profile) {
+            state.user = userData.profile;
+            renderUserInfo();
+        }
+
+        if (!teamData.error && teamData.elimination) {
+            state.teams = teamData.elimination;
+            renderTeams();
+        }
+
+        state.cacheMetadata(state.user, state.teams);
+        dom.metadataIcon.classList.add("hidden");
+    }
+
     function renderUserInfo() {
-        const u = AppState.user;
+        const u = state.user;
         if (!u) return;
 
         const stateColor = mapStateColor(u.status.state);
         const statusText = simplifyStatus(u.status);
 
-        userInfoContent.innerHTML = `
+        dom.userInfoContent.innerHTML = `
             <div><strong>${u.name}</strong> [${u.level}]</div>
             <div class="${stateColor}">${statusText}</div>
         `;
@@ -126,10 +119,9 @@
 
     function simplifyStatus(statusObj) {
         if (!statusObj) return "Unknown";
-
         const desc = statusObj.description || statusObj.state;
         if (desc.startsWith("Traveling to")) {
-            return desc.replace("Traveling to", "Traveling (");
+            return desc.replace("Traveling to", "Traveling (") + ")";
         } else if (desc.startsWith("Returning to Torn from")) {
             const place = desc.replace("Returning to Torn from ", "");
             return `Returning from ${place}`;
@@ -137,18 +129,12 @@
         return desc;
     }
 
-    // --------------------------
-    // Team Table
-    // --------------------------
     function renderTeams() {
-        const selected = AppState.selectedTeamId;
-        const teams = AppState.teams;
+        const selected = state.selectedTeamId;
+        dom.teamTableBody.innerHTML = "";
 
-        teamTableBody.innerHTML = "";
-
-        for (const t of teams) {
+        for (const t of state.teams) {
             const row = document.createElement("tr");
-
             if (t.id === selected) row.classList.add("selected-row");
 
             row.innerHTML = `
@@ -164,39 +150,36 @@
             `;
 
             row.addEventListener("click", () => handleTeamSelect(t.id));
-
-            teamTableBody.appendChild(row);
+            dom.teamTableBody.appendChild(row);
         }
     }
 
     async function handleTeamSelect(teamId) {
-        AppState.selectedTeamId = teamId;
+        state.selectedTeamId = teamId;
         renderTeams();
-        refreshTeamPlayers(true);
+        await refreshTeamPlayers(true);
     }
 
-    // --------------------------
-    // Team Players Refresh
-    // --------------------------
     async function refreshTeamPlayers(force = false) {
-        const teamId = AppState.selectedTeamId;
+        const teamId = state.selectedTeamId;
         if (!teamId) return;
 
-        const should = force || AppState.shouldRefreshTeam(teamId);
-        if (!should) {
+        const now = Date.now();
+        const should = force || state.shouldRefreshTeam(teamId, now);
+        if (!should || now - (state.teamPlayersTimestamp[teamId] || 0) < state.MIN_REFRESH_MS) {
             renderPlayers();
             return;
         }
 
-        teamIcon.classList.remove("hidden");
+        dom.teamIcon.classList.remove("hidden");
 
-        // Fetch paginated
         let offset = 0;
         let combined = [];
         let callCount = 0;
+        let keepPaging = true;
 
-        while (true) {
-            const data = await TornAPI.getTeamPlayers(teamId, offset, AppState.apikey);
+        while (keepPaging) {
+            const data = await api.getTeamPlayers(teamId, offset, state.apikey);
             callCount++;
 
             if (data.error) {
@@ -207,63 +190,59 @@
             const arr = data.eliminationteam || [];
             combined = combined.concat(arr);
 
-            if (arr.length < 100) break;
-            offset += 100;
+            if (arr.length < 100) {
+                keepPaging = false;
+            } else {
+                offset += 100;
+            }
         }
 
         console.log(`Player refresh API calls: ${callCount}`);
-
-        AppState.teamPlayers[teamId] = combined;
-        AppState.teamPlayersTimestamp[teamId] = Date.now();
-
+        state.cacheTeamPlayers(teamId, combined);
         renderPlayers();
-        teamIcon.classList.add("hidden");
+        dom.teamIcon.classList.add("hidden");
     }
 
-    // --------------------------
-    // Player Rendering with Filters
-    // --------------------------
+    function applyFilters(players) {
+        const levelMin = parseInt(dom.levelMinInput.value || 0, 10);
+        const levelMax = parseInt(dom.levelMaxInput.value || 100, 10);
+        const okayOnly = dom.filterOkayOnly.checked;
+        const includeTraveling = dom.filterTraveling.checked;
+        const includeAbroad = dom.filterAbroad.checked;
+
+        return players.filter(p => {
+            const st = p.status.state;
+            if (p.level < levelMin || p.level > levelMax) return false;
+            if (okayOnly && st !== "Okay") return false;
+            if (st === "Traveling" && !includeTraveling) return false;
+            if (st === "Abroad" && !includeAbroad) return false;
+            return true;
+        });
+    }
+
     function renderPlayers() {
-        const teamId = AppState.selectedTeamId;
+        const teamId = state.selectedTeamId;
         if (!teamId) {
-            playerTableBody.innerHTML = "";
+            dom.playerTableBody.innerHTML = "";
             return;
         }
 
-        const players = AppState.teamPlayers[teamId] || [];
+        const players = state.teamPlayers[teamId] || [];
+        const filtered = applyFilters(players);
 
-        const levelMin = parseInt(levelMinInput.value || 0);
-        const levelMax = parseInt(levelMaxInput.value || 100);
-        const okayOnly = filterOkayOnly.checked;
+        const scrollContainer = dom.playerTableBody.parentElement;
+        const prevScroll = scrollContainer ? scrollContainer.scrollTop : 0;
 
-        const includeTraveling = document.getElementById("filter-include-traveling").checked;
-        const includeAbroad = document.getElementById("filter-include-abroad").checked;
-
-        const filtered = players.filter(p => {
-            const st = p.status.state;
-
-            if (p.level < levelMin || p.level > levelMax) return false;
-
-            if (okayOnly && st !== "Okay") return false;
-
-            if (st === "Traveling" && !includeTraveling) return false;
-            if (st === "Abroad" && !includeAbroad) return false;
-
-            return true;
-        });
-
-        playerTableBody.innerHTML = "";
+        dom.playerTableBody.innerHTML = "";
 
         for (const p of filtered) {
             const row = document.createElement("tr");
-
             const color = mapStateColor(p.status.state);
             const statusText = simplifyStatus(p.status);
-
             const hospitalUntil = p.status.until;
             let hospitalCell = "";
             if (hospitalUntil) {
-                hospitalCell = `<span class="${color}" data-until="${hospitalUntil}" class="countdown"></span>`;
+                hospitalCell = `<span class="state-yellow" data-until="${hospitalUntil}"></span>`;
             }
 
             row.innerHTML = `
@@ -277,37 +256,23 @@
                 <td>${hospitalCell}</td>
             `;
 
-            playerTableBody.appendChild(row);
+            dom.playerTableBody.appendChild(row);
         }
 
+        if (scrollContainer) scrollContainer.scrollTop = prevScroll;
         startCountdownUpdater();
     }
 
-    // --------------------------
-    // Countdown (Hospital Only)
-    // --------------------------
-    let countdownInterval = null;
-
     function startCountdownUpdater() {
-        if (countdownInterval) clearInterval(countdownInterval);
-
-        countdownInterval = setInterval(() => {
+        if (intervals.countdown) clearInterval(intervals.countdown);
+        intervals.countdown = setInterval(() => {
             document.querySelectorAll("[data-until]").forEach(el => {
-                const untilSec = parseInt(el.getAttribute("data-until"));
+                const untilSec = parseInt(el.getAttribute("data-until"), 10);
                 const nowSec = Math.floor(Date.now() / 1000);
-                let remaining = untilSec - nowSec;
-
-                let colorClass = "state-green";
-                if (remaining < 60) colorClass = "state-orange";
-                if (remaining < 10) colorClass = "state-red";
-
+                const remaining = untilSec - nowSec;
+                const colorClass = getHospitalCountdownClass(remaining);
                 el.className = colorClass;
-
-                if (remaining >= 0) {
-                    el.textContent = formatHMS(remaining);
-                } else {
-                    el.textContent = "-" + formatHMS(Math.abs(remaining));
-                }
+                el.textContent = remaining >= 0 ? formatHMS(remaining) : `-${formatHMS(Math.abs(remaining))}`;
             });
         }, 1000);
     }
@@ -321,8 +286,14 @@
         return `${s}s`;
     }
 
-    function mapStateColor(state) {
-        switch (state) {
+    function getHospitalCountdownClass(remaining) {
+        if (remaining < 10) return "state-red";
+        if (remaining < 60) return "state-orange";
+        return "state-yellow";
+    }
+
+    function mapStateColor(stateValue) {
+        switch (stateValue) {
             case "Hospital": return "state-orange";
             case "Traveling": return "state-blue";
             case "Abroad": return "state-blue";
@@ -331,42 +302,47 @@
         }
     }
 
-    // --------------------------
-    // Filter Listeners
-    // --------------------------
     function attachFilterListeners() {
-        levelMinInput.addEventListener("change", renderPlayers);
-        levelMaxInput.addEventListener("change", renderPlayers);
-        filterOkayOnly.addEventListener("change", renderPlayers);
-        filterTraveling.addEventListener("change", renderPlayers);
-        filterAbroad.addEventListener("change", renderPlayers);
+        dom.levelMinInput.addEventListener("change", renderPlayers);
+        dom.levelMaxInput.addEventListener("change", renderPlayers);
+        dom.filterOkayOnly.addEventListener("change", renderPlayers);
+        dom.filterTraveling.addEventListener("change", renderPlayers);
+        dom.filterAbroad.addEventListener("change", renderPlayers);
     }
 
-    // --------------------------
-    // Countdown Timers
-    // --------------------------
     function startMetadataCountdown() {
-        setInterval(() => {
-            const remaining = AppState.METADATA_REFRESH_MS - (Date.now() - AppState.metadataTimestamp);
-            metadataTimerLabel.textContent = `Next refresh: ${Math.max(0, Math.floor(remaining / 1000))}s`;
+        if (intervals.metadata) clearInterval(intervals.metadata);
+        intervals.metadata = setInterval(() => {
+            const remaining = state.METADATA_REFRESH_MS - (Date.now() - state.metadataTimestamp);
+            dom.metadataTimerLabel.textContent = `Next refresh: ${Math.max(0, Math.floor(remaining / 1000))}s`;
             if (remaining <= 0) refreshMetadata();
         }, 1000);
     }
 
     function startTeamCountdown() {
-        setInterval(() => {
-            const teamId = AppState.selectedTeamId;
+        if (intervals.team) clearInterval(intervals.team);
+        intervals.team = setInterval(() => {
+            const teamId = state.selectedTeamId;
             if (!teamId) {
-                teamTimerLabel.textContent = "Next refresh: --";
+                dom.teamTimerLabel.textContent = "Next refresh: --";
                 return;
             }
-
-            const last = AppState.teamPlayersTimestamp[teamId] || 0;
-            const remaining = AppState.TEAM_REFRESH_MS - (Date.now() - last);
-            teamTimerLabel.textContent = `Next refresh: ${Math.max(0, Math.floor(remaining / 1000))}s`;
-
+            const last = state.teamPlayersTimestamp[teamId] || 0;
+            const remaining = state.TEAM_REFRESH_MS - (Date.now() - last);
+            dom.teamTimerLabel.textContent = `Next refresh: ${Math.max(0, Math.floor(remaining / 1000))}s`;
             if (remaining <= 0) refreshTeamPlayers();
         }, 1000);
     }
 
+    window.app = {
+        init,
+        simplifyStatus,
+        mapStateColor,
+        formatHMS,
+        applyFilters,
+        getHospitalCountdownClass,
+        renderPlayers
+    };
+
+    init();
 })();

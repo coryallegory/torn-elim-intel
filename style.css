@@ -119,6 +119,7 @@ tr.selected-row {
 
 /* COLOR STATES */
 .state-green { color: #00cc44; }
+.state-yellow { color: #ffdf00; }
 .state-orange { color: #ff9900; }
 .state-red { color: #ff3333; }
 .state-blue { color: #33aaff; }
