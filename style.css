@@ -55,9 +55,28 @@ h2, h3 {
 
 
 .apikey-row {
+    display: grid;
+    grid-template-columns: 1.3fr 2fr auto auto;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 4px 0;
+}
+
+.apikey-label {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.apikey-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f5f5f5;
+}
+
+.apikey-subtext {
+    font-size: 12px;
+    color: #cfcfcf;
 }
 
 input[type="text"], input[type="number"] {
@@ -231,7 +250,7 @@ tr.selected-row {
     }
 
     .apikey-row {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         align-items: stretch;
     }
 
