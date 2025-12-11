@@ -135,9 +135,10 @@
 
         const data = await api.getUser(state.apikey);
         if (data.error || !data.profile) {
-            dom.apikeyStatus.textContent = "API key invalid";
-            dom.apikeyStatus.classList.add("status-error");
             stopIntervals();
+            clearAuthenticatedState();
+            showNoKey("API key invalid");
+            await loadStaticSnapshot();
             return;
         }
 
@@ -147,9 +148,12 @@
         dom.userBox.classList.remove("hidden");
 
         renderUserInfo();
-        refreshMetadata(true);
+        await refreshMetadata(true);
         startMetadataCountdown();
         startTeamCountdown();
+        if (state.selectedTeamId) {
+            refreshTeamPlayers(true);
+        }
     }
 
     function stopIntervals() {
@@ -159,9 +163,32 @@
         intervals.metadata = intervals.team = intervals.countdown = null;
     }
 
-    function showNoKey() {
-        dom.apikeyStatus.textContent = "No API key loaded";
+    function showNoKey(message = "No API key loaded") {
+        dom.apikeyStatus.textContent = message;
         dom.apikeyStatus.classList.add("status-error");
+    }
+
+    function clearAuthenticatedState() {
+        state.user = null;
+        dom.userInfoContent.innerHTML = "";
+        dom.userBox.classList.add("hidden");
+        dom.metadataTimerLabel.textContent = "Next refresh: --";
+        dom.teamTimerLabel.textContent = "Next refresh: --";
+        dom.metadataIcon.classList.add("hidden");
+        dom.teamIcon.classList.add("hidden");
+
+        state.metadataTimestamp = 0;
+        localStorage.setItem("metadataTimestamp", "0");
+
+        state.teams = [];
+        state.selectedTeamId = null;
+        state.teamPlayers = {};
+        state.teamPlayersTimestamp = {};
+        localStorage.setItem("teamPlayers", JSON.stringify(state.teamPlayers));
+        localStorage.setItem("teamPlayersTimestamp", JSON.stringify(state.teamPlayersTimestamp));
+
+        renderTeams();
+        renderPlayers();
     }
 
     async function loadStaticSnapshot() {
