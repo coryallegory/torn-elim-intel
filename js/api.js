@@ -1,6 +1,6 @@
 window.api = {
     BASE: "https://api.torn.com/v2",
-    FF_BASE: "https://ffscouter.com/api",
+    FF_BASE: "https://ffscouter.com/api/v1/",
 
     async request(url, apikey) {
         try {
