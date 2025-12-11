@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": 0,
+    "name": "Snapshot pending",
+    "participants": 0,
+    "players": [
+      {
+        "id": 0,
+        "name": "Awaiting refresh",
+        "level": 0,
+        "bs_estimate_human": "--"
+      }
+    ]
+  }
+]

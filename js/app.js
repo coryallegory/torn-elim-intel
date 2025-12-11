@@ -60,6 +60,7 @@
             validateAndStart();
         } else {
             showNoKey();
+            loadStaticSnapshot();
         }
 
         if (state.ffapikey) {
@@ -121,6 +122,50 @@
     function showNoKey() {
         dom.apikeyStatus.textContent = "No API key loaded";
         dom.apikeyStatus.classList.add("status-error");
+    }
+
+    async function loadStaticSnapshot() {
+        try {
+            const res = await fetch("elimination_participants.json", { cache: "no-cache" });
+            if (!res.ok) {
+                console.warn("No static elimination snapshot available.");
+                return;
+            }
+
+            const payload = await res.json();
+            const teams = Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload?.teams)
+                    ? payload.teams
+                    : [];
+
+            if (!teams.length) return;
+
+            state.teams = teams.map(t => ({
+                id: t.id,
+                name: t.name,
+                participants: t.participants ?? (t.players?.length ?? 0),
+                score: t.score ?? "--",
+                wins: t.wins ?? "--",
+                losses: t.losses ?? "--",
+                lives: t.lives ?? "--",
+                position: t.position ?? "--",
+                eliminated: t.eliminated ?? "--"
+            }));
+
+            state.teamPlayers = {};
+            state.teamPlayersTimestamp = {};
+            teams.forEach(team => {
+                const players = (team.players || []).map(p => ensurePlayerDefaults({ ...p }));
+                state.cacheTeamPlayers(team.id, players);
+            });
+
+            state.selectedTeamId = state.teams[0]?.id || null;
+            renderTeams();
+            renderPlayers();
+        } catch (err) {
+            console.warn("Failed to load static elimination snapshot", err);
+        }
     }
 
     function showNoFfKey() {
@@ -386,12 +431,14 @@
         if (!player) return player;
 
         const { rawData, location, ...rest } = player;
-        const canonicalLocation = player.location ?? determinePlayerLocation(player.status);
+        const status = player.status || { state: "Unknown", description: "Unknown" };
+        const canonicalLocation = player.location ?? determinePlayerLocation(status);
         const bsEstimateHuman = player.bs_estimate_human === undefined ? "--" : player.bs_estimate_human;
         const bsEstimateNumeric = deriveBsEstimateNumber(player);
 
         return {
             ...player,
+            status,
             location: canonicalLocation,
             rawData: rawData || { ...rest },
             bs_estimate_human: bsEstimateHuman,
@@ -624,6 +671,11 @@
         return aStr.localeCompare(bStr, undefined, { numeric: true, sensitivity: "base" }) * multiplier;
     }
 
+    function formatTeamValue(value) {
+        if (value === undefined || value === null || value === "") return "--";
+        return value;
+    }
+
     function renderTeams() {
         const selected = state.selectedTeamId;
         dom.teamTableBody.innerHTML = "";
@@ -633,18 +685,18 @@
         for (const t of teams) {
             const row = document.createElement("tr");
             if (t.id === selected) row.classList.add("selected-row");
-            if (t.eliminated) row.classList.add("eliminated-row");
+            if (t.eliminated === true) row.classList.add("eliminated-row");
 
             row.innerHTML = `
                 <td>${t.id}</td>
                 <td>${t.name}</td>
-                <td>${t.participants}</td>
-                <td>${t.score}</td>
-                <td>${t.wins}</td>
-                <td>${t.losses}</td>
-                <td>${t.lives}</td>
-                <td>${t.position}</td>
-                <td>${t.eliminated}</td>
+                <td>${formatTeamValue(t.participants)}</td>
+                <td>${formatTeamValue(t.score)}</td>
+                <td>${formatTeamValue(t.wins)}</td>
+                <td>${formatTeamValue(t.losses)}</td>
+                <td>${formatTeamValue(t.lives)}</td>
+                <td>${formatTeamValue(t.position)}</td>
+                <td>${formatTeamValue(t.eliminated)}</td>
             `;
 
             row.addEventListener("click", () => handleTeamSelect(t.id));
@@ -670,6 +722,11 @@
     async function refreshTeamPlayers(force = false) {
         const teamId = state.selectedTeamId;
         if (!teamId) return;
+
+        if (!state.apikey) {
+            renderPlayers();
+            return;
+        }
 
         const inFlight = teamFetchInFlight.get(teamId);
         if (inFlight) {
