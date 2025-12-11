@@ -935,7 +935,6 @@
                 <td>${p.last_action.relative}</td>
                 <td>${p.attacks}</td>
                 <td><a href="${attackUrl}" target="_blank" rel="noopener noreferrer">${p.bs_estimate_human || "--"}</a></td>
-                <td class="hidden raw-data-cell">${JSON.stringify(p.rawData || {}, null, 0)}</td>
             `;
 
             const rawCell = document.createElement("td");
