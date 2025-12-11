@@ -877,7 +877,10 @@
             const bsIsNumber = typeof bsValue === "number" && !Number.isNaN(bsValue);
             if (hasBsMin && (!bsIsNumber || bsValue < bsMin)) return false;
             if (hasBsMax && (!bsIsNumber || bsValue > bsMax)) return false;
-            if (okayOnly && statusText !== "Okay") return false;
+            if (okayOnly) {
+                const isOkayStatus = statusText === "Okay" || statusText.startsWith("In ");
+                if (!isOkayStatus) return false;
+            }
             if (locationSelection === "all") return true;
 
             if (locationSelection === "torn") {
