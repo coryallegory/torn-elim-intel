@@ -3,7 +3,12 @@ window.api = {
 
     async request(url, apikey) {
         try {
-            const res = await fetch(url + `&key=${apikey}`);
+            const res = await fetch(url, {
+                headers: {
+                    Accept: "application/json",
+                    Authorization: `ApiKey ${apikey}`
+                }
+            });
             const data = await res.json();
 
             // Log errors
@@ -20,18 +25,16 @@ window.api = {
     },
 
     getUser(apikey) {
-        return this.request(`${this.BASE}/user/?selections=profile`, apikey);
+        return this.request(`${this.BASE}/user/basic?striptags=true`, apikey);
     },
 
     getTeams(apikey) {
-        return this.request(`${this.BASE}/torn/elimination/?elimination=true`, apikey);
+        return this.request(`${this.BASE}/torn/elimination`, apikey);
     },
 
     getTeamPlayers(teamId, offset, apikey) {
-        return this.request(
-            `${this.BASE}/torn/${teamId}/eliminationteam?limit=100&offset=${offset}`,
-            apikey
-        );
+        const offsetParam = offset ? `&offset=${offset}` : "";
+        return this.request(`${this.BASE}/torn/${teamId}/eliminationteam?limit=100${offsetParam}`, apikey);
     }
 };
 
