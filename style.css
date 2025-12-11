@@ -1,9 +1,9 @@
 body {
     margin: 0;
     padding: 0 8px;
-    background: #222;
+    background: #f25caa;
     font-family: Arial, sans-serif;
-    color: #f25caa;
+    color: #eee;
 }
 
 #app-container {
