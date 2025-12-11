@@ -633,6 +633,7 @@
         for (const t of teams) {
             const row = document.createElement("tr");
             if (t.id === selected) row.classList.add("selected-row");
+            if (t.eliminated) row.classList.add("eliminated-row");
 
             row.innerHTML = `
                 <td>${t.id}</td>

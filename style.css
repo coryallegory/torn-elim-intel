@@ -126,6 +126,10 @@ tr.selected-row {
     background: #555 !important;
 }
 
+.eliminated-row {
+    color: #ff6666;
+}
+
 .hidden {
     display: none !important;
 }
