@@ -53,13 +53,34 @@
     let metadataRefreshInFlight = null;
     let metadataRefreshStart = 0;
 
+    function isPinkPowerTeam(teamLike) {
+        if (!teamLike) return false;
+        const numericId = Number(teamLike.id);
+        const normalizedName = typeof teamLike.name === "string"
+            ? teamLike.name.trim().toLowerCase()
+            : "";
+
+        if (!Number.isNaN(numericId) && numericId === 1) return true;
+        return normalizedName.includes("pink power");
+    }
+
+    function isHiddenTeam(teamLike) {
+        return state.hidePinkPowerTeam && isPinkPowerTeam(teamLike);
+    }
+
+    function getVisibleTeams(teams = state.teams) {
+        if (!Array.isArray(teams)) return [];
+        if (!state.hidePinkPowerTeam) return teams;
+        return teams.filter(t => !isPinkPowerTeam(t));
+    }
+
     function normalizeTeamId(id) {
         if (id === null || id === undefined) return null;
         return String(id);
     }
 
     function ensureValidSelectedTeam() {
-        const teams = Array.isArray(state.teams) ? state.teams : [];
+        const teams = Array.isArray(state.teams) ? getVisibleTeams(state.teams) : [];
         const availableIds = new Set(
             teams
                 .map(t => normalizeTeamId(t?.id))
@@ -68,7 +89,9 @@
 
         Object.keys(state.teamPlayers || {}).forEach(idStr => {
             const normalized = normalizeTeamId(idStr);
-            if (normalized !== null) availableIds.add(normalized);
+            if (normalized !== null && !isHiddenTeam({ id: normalized })) {
+                availableIds.add(normalized);
+            }
         });
 
         const current = normalizeTeamId(state.selectedTeamId);
@@ -145,6 +168,7 @@
         }
 
         state.user = await attachOfflineTeamToUser(data.profile);
+        enforcePinkPowerRestriction(state.user);
         dom.apikeyStatus.textContent = "API key loaded";
         dom.apikeyStatus.classList.remove("status-error");
         dom.userBox.classList.remove("hidden");
@@ -251,7 +275,8 @@
                 state.cacheTeamPlayers(team.id, players);
             });
 
-            state.saveSelectedTeamId(state.teams[0]?.id || null);
+            const visibleTeams = getVisibleTeams(state.teams);
+            state.saveSelectedTeamId(visibleTeams[0]?.id || null);
             renderTeams();
             renderPlayers();
         } catch (err) {
@@ -316,6 +341,7 @@
 
             if (!userData.error && userData.profile) {
                 state.user = await attachOfflineTeamToUser(userData.profile);
+                enforcePinkPowerRestriction(state.user);
                 renderUserInfo();
             }
 
@@ -443,6 +469,18 @@
         if (teamInfo.id) return `ID ${teamInfo.id}`;
 
         return "Not listed in snapshot";
+    }
+
+    function enforcePinkPowerRestriction(user) {
+        if (state.hidePinkPowerTeam) return;
+
+        const teamInfo = user?.eliminationTeam;
+        if (teamInfo && !isPinkPowerTeam(teamInfo)) {
+            state.hidePinkPowerPermanently();
+            ensureValidSelectedTeam();
+            renderTeams();
+            renderPlayers();
+        }
     }
 
     function simplifyStatus(statusObj) {
@@ -878,7 +916,7 @@
         const selectedNormalized = normalizeTeamId(selected);
         dom.teamTableBody.innerHTML = "";
 
-        const teams = sortTeamsList(state.teams);
+        const teams = sortTeamsList(getVisibleTeams(state.teams));
 
         for (const t of teams) {
             const row = document.createElement("tr");
