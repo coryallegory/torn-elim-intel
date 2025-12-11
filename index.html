@@ -83,11 +83,11 @@
                 </label>
 
                 <label>
-                    <input type="checkbox" id="filter-include-abroad" checked>
-                    Include Abroad
+                    Abroad:
+                    <select id="abroad-filter">
+                        <option value="all">All Abroad</option>
+                    </select>
                 </label>
-
-                <div id="abroad-filters" class="abroad-list"></div>
             </div>
 
             <table id="player-table">
@@ -99,8 +99,6 @@
                         <th>Status</th>
                         <th>Last Action</th>
                         <th>Attacks</th>
-                        <th>Score</th>
-                        <th>Hospital</th>
                     </tr>
                 </thead>
                 <tbody id="player-table-body"></tbody>

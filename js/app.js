@@ -11,7 +11,7 @@
         levelMaxInput: document.getElementById("level-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
         filterTraveling: document.getElementById("filter-include-traveling"),
-        filterAbroad: document.getElementById("filter-include-abroad"),
+        abroadFilter: document.getElementById("abroad-filter"),
         metadataTimerLabel: document.getElementById("metadata-refresh-timer"),
         metadataIcon: document.getElementById("metadata-refresh-icon"),
         teamTimerLabel: document.getElementById("team-refresh-timer"),
@@ -148,6 +148,23 @@
         return desc;
     }
 
+    function getAbroadDestination(statusObj) {
+        if (!statusObj) return null;
+        const details = statusObj.details || {};
+        if (details.destination) return details.destination;
+        if (details.country) return details.country;
+
+        const desc = statusObj.description || "";
+        const parenMatch = desc.match(/\(([^)]+)\)/);
+        if (parenMatch) return parenMatch[1];
+
+        const inMatch = desc.match(/in\s+([A-Za-z\s]+)$/i);
+        if (inMatch) return inMatch[1].trim();
+
+        if (desc.includes(" ")) return desc.split(" ").slice(1).join(" ").trim();
+        return null;
+    }
+
     function renderTeams() {
         const selected = state.selectedTeamId;
         dom.teamTableBody.innerHTML = "";
@@ -245,16 +262,51 @@
         const levelMax = parseInt(dom.levelMaxInput.value || 100, 10);
         const okayOnly = dom.filterOkayOnly.checked;
         const includeTraveling = dom.filterTraveling.checked;
-        const includeAbroad = dom.filterAbroad.checked;
+        const abroadSelection = dom.abroadFilter.value;
 
         return players.filter(p => {
             const st = p.status.state;
             if (p.level < levelMin || p.level > levelMax) return false;
             if (okayOnly && st !== "Okay") return false;
             if (st === "Traveling" && !includeTraveling) return false;
-            if (st === "Abroad" && !includeAbroad) return false;
+            if (st === "Abroad") {
+                if (abroadSelection !== "all") {
+                    const dest = getAbroadDestination(p.status) || "Unknown";
+                    if (dest !== abroadSelection) return false;
+                }
+            }
             return true;
         });
+    }
+
+    function updateAbroadFilterOptions(players) {
+        const destinations = new Set();
+        players.forEach(p => {
+            if (p.status.state === "Abroad") {
+                destinations.add(getAbroadDestination(p.status) || "Unknown");
+            }
+        });
+
+        const previous = dom.abroadFilter.value || "all";
+        dom.abroadFilter.innerHTML = "";
+
+        const defaultOpt = document.createElement("option");
+        defaultOpt.value = "all";
+        defaultOpt.textContent = "All Abroad";
+        dom.abroadFilter.appendChild(defaultOpt);
+
+        Array.from(destinations)
+            .sort((a, b) => a.localeCompare(b))
+            .forEach(dest => {
+                const opt = document.createElement("option");
+                opt.value = dest;
+                opt.textContent = dest;
+                dom.abroadFilter.appendChild(opt);
+            });
+
+        if (Array.from(destinations).includes(previous)) {
+            dom.abroadFilter.value = previous;
+        }
     }
 
     function renderPlayers() {
@@ -265,6 +317,7 @@
         }
 
         const players = state.teamPlayers[teamId] || [];
+        updateAbroadFilterOptions(players);
         const filtered = applyFilters(players);
 
         const scrollContainer = dom.playerTableBody.parentElement;
@@ -272,25 +325,29 @@
 
         dom.playerTableBody.innerHTML = "";
 
+        const nowSec = Math.floor(Date.now() / 1000);
+
         for (const p of filtered) {
             const row = document.createElement("tr");
-            const color = mapStateColor(p.status.state);
-            const statusText = simplifyStatus(p.status);
+            const baseStatusText = simplifyStatus(p.status);
             const hospitalUntil = p.status.until;
-            let hospitalCell = "";
-            if (hospitalUntil) {
-                hospitalCell = `<span class="state-yellow" data-until="${hospitalUntil}"></span>`;
+            let statusClass = mapStateColor(p.status.state);
+            let statusCellContent = baseStatusText;
+
+            if (p.status.state === "Hospital" && hospitalUntil) {
+                const remaining = hospitalUntil - nowSec;
+                const countdownText = formatHMS(Math.max(0, remaining));
+                statusClass = getHospitalCountdownClass(remaining);
+                statusCellContent = `In hospital for <span class="countdown" data-until="${hospitalUntil}">${countdownText}</span>`;
             }
 
             row.innerHTML = `
                 <td>${p.id}</td>
                 <td>${p.name}</td>
                 <td>${p.level}</td>
-                <td class="${color}">${statusText}</td>
+                <td class="status-cell ${statusClass}">${statusCellContent}</td>
                 <td>${p.last_action.relative}</td>
                 <td>${p.attacks}</td>
-                <td>${p.score}</td>
-                <td>${hospitalCell}</td>
             `;
 
             dom.playerTableBody.appendChild(row);
@@ -303,13 +360,24 @@
     function startCountdownUpdater() {
         if (intervals.countdown) clearInterval(intervals.countdown);
         intervals.countdown = setInterval(() => {
-            document.querySelectorAll("[data-until]").forEach(el => {
+            document.querySelectorAll(".countdown[data-until]").forEach(el => {
                 const untilSec = parseInt(el.getAttribute("data-until"), 10);
                 const nowSec = Math.floor(Date.now() / 1000);
                 const remaining = untilSec - nowSec;
+                const cell = el.closest(".status-cell");
+
+                if (remaining <= 0) {
+                    if (cell) {
+                        cell.textContent = "Okay";
+                        cell.className = "status-cell state-green";
+                    }
+                    el.removeAttribute("data-until");
+                    return;
+                }
+
                 const colorClass = getHospitalCountdownClass(remaining);
-                el.className = colorClass;
-                el.textContent = remaining >= 0 ? formatHMS(remaining) : `-${formatHMS(Math.abs(remaining))}`;
+                el.textContent = formatHMS(remaining);
+                if (cell) cell.className = `status-cell ${colorClass}`;
             });
         }, 1000);
     }
@@ -344,7 +412,7 @@
         dom.levelMaxInput.addEventListener("change", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
         dom.filterTraveling.addEventListener("change", renderPlayers);
-        dom.filterAbroad.addEventListener("change", renderPlayers);
+        dom.abroadFilter.addEventListener("change", renderPlayers);
     }
 
     function startMetadataCountdown() {
