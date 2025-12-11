@@ -3,6 +3,7 @@ window.state = {
     ffapikey: "",
     ffApiKeyValid: false,
     user: null,
+    userTeam: null,
     teams: [],
     selectedTeamId: null,
     selectedPlayersByTeam: {},
@@ -22,15 +23,18 @@ window.state = {
             const playersRaw = localStorage.getItem("teamPlayers");
             const playerTimestampsRaw = localStorage.getItem("teamPlayersTimestamp");
             const metadataTs = localStorage.getItem("metadataTimestamp");
+            const userTeamRaw = localStorage.getItem("userTeam");
 
             this.teamPlayers = playersRaw ? JSON.parse(playersRaw) : {};
             this.teamPlayersTimestamp = playerTimestampsRaw ? JSON.parse(playerTimestampsRaw) : {};
             this.metadataTimestamp = metadataTs ? parseInt(metadataTs, 10) : 0;
+            this.userTeam = userTeamRaw ? JSON.parse(userTeamRaw) : null;
         } catch (err) {
             console.error("Failed to restore cached state", err);
             this.teamPlayers = {};
             this.teamPlayersTimestamp = {};
             this.metadataTimestamp = 0;
+            this.userTeam = null;
         }
     },
 
@@ -56,6 +60,19 @@ window.state = {
         this.teamPlayersTimestamp[teamId] = Date.now();
         localStorage.setItem("teamPlayers", JSON.stringify(this.teamPlayers));
         localStorage.setItem("teamPlayersTimestamp", JSON.stringify(this.teamPlayersTimestamp));
+    },
+
+    setUserTeam(teamInfo) {
+        this.userTeam = teamInfo;
+        if (this.user) {
+            this.user.team = teamInfo;
+        }
+
+        if (teamInfo) {
+            localStorage.setItem("userTeam", JSON.stringify(teamInfo));
+        } else {
+            localStorage.removeItem("userTeam");
+        }
     },
 
     shouldRefreshMetadata(now = Date.now()) {
