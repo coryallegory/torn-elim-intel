@@ -744,14 +744,14 @@
         const hasBsMax = bsMaxInputVal !== "" && typeof bsMax === "number" && !Number.isNaN(bsMax);
 
         return players.filter(p => {
-            const st = p.status?.state;
+            const statusText = simplifyStatus(p.status);
             const playerLocation = p.location;
             if (p.level < levelMin || p.level > levelMax) return false;
             const bsValue = typeof p.bs_estimate === "number" ? p.bs_estimate : parseBattlestatValue(p.bs_estimate);
             const bsIsNumber = typeof bsValue === "number" && !Number.isNaN(bsValue);
             if (hasBsMin && (!bsIsNumber || bsValue < bsMin)) return false;
             if (hasBsMax && (!bsIsNumber || bsValue > bsMax)) return false;
-            if (okayOnly && st === "Hospital") return false;
+            if (okayOnly && statusText !== "Okay") return false;
             if (locationSelection === "all") return true;
 
             if (locationSelection === "torn") {
