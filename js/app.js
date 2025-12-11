@@ -14,6 +14,8 @@
         playerTableHeaders: document.querySelectorAll("#player-table thead th[data-col]"),
         levelMinInput: document.getElementById("level-min"),
         levelMaxInput: document.getElementById("level-max"),
+        bsMinInput: document.getElementById("bs-min"),
+        bsMaxInput: document.getElementById("bs-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
         locationFilter: document.getElementById("location-filter"),
         metadataTimerLabel: document.getElementById("metadata-refresh-timer"),
@@ -21,6 +23,23 @@
         teamTimerLabel: document.getElementById("team-refresh-timer"),
         teamIcon: document.getElementById("team-refresh-icon")
     };
+
+    const LOCATION = Object.freeze({
+        ARGENTINA: "Argentina",
+        CANADA: "Canada",
+        CAYMAN_ISLANDS: "Cayman Islands",
+        CHINA: "China",
+        HAWAII: "Hawaii",
+        JAPAN: "Japan",
+        MEXICO: "Mexico",
+        SOUTH_AFRICA: "South Africa",
+        SWITZERLAND: "Switzerland",
+        UAE: "UAE",
+        UNITED_KINGDOM: "United Kingdom",
+        TORN: "Torn"
+    });
+
+    const LOCATION_SYNONYMS = buildLocationSynonymMap();
 
     const intervals = { metadata: null, team: null, countdown: null };
     const teamFetchInFlight = new Map();
@@ -206,6 +225,49 @@
         return desc;
     }
 
+    function buildLocationSynonymMap() {
+        const map = new Map();
+        Object.values(LOCATION).forEach(loc => map.set(loc.toLowerCase(), loc));
+
+        const synonyms = [
+            ["canadian", LOCATION.CANADA],
+            ["canada", LOCATION.CANADA],
+            ["argentinian", LOCATION.ARGENTINA],
+            ["argentina", LOCATION.ARGENTINA],
+            ["cayman", LOCATION.CAYMAN_ISLANDS],
+            ["cayman islands", LOCATION.CAYMAN_ISLANDS],
+            ["china", LOCATION.CHINA],
+            ["chinese", LOCATION.CHINA],
+            ["hawaii", LOCATION.HAWAII],
+            ["hawaiian", LOCATION.HAWAII],
+            ["japan", LOCATION.JAPAN],
+            ["japanese", LOCATION.JAPAN],
+            ["mexico", LOCATION.MEXICO],
+            ["mexican", LOCATION.MEXICO],
+            ["south africa", LOCATION.SOUTH_AFRICA],
+            ["southafrica", LOCATION.SOUTH_AFRICA],
+            ["south african", LOCATION.SOUTH_AFRICA],
+            ["switzerland", LOCATION.SWITZERLAND],
+            ["swiss", LOCATION.SWITZERLAND],
+            ["uae", LOCATION.UAE],
+            ["emirati", LOCATION.UAE],
+            ["united kingdom", LOCATION.UNITED_KINGDOM],
+            ["uk", LOCATION.UNITED_KINGDOM],
+            ["british", LOCATION.UNITED_KINGDOM],
+            ["torn", LOCATION.TORN]
+        ];
+
+        synonyms.forEach(([key, value]) => map.set(key, value));
+        return map;
+    }
+
+    function normalizeLocationName(rawName) {
+        if (!rawName || typeof rawName !== "string") return null;
+        const cleaned = rawName.trim().toLowerCase();
+        if (!cleaned) return null;
+        return LOCATION_SYNONYMS.get(cleaned) || null;
+    }
+
     function extractHospitalLocation(statusObj) {
         if (!statusObj || !statusObj.description) return "Torn";
         const desc = statusObj.description.trim();
@@ -218,6 +280,81 @@
 
         // Default if no city is named
         return "Torn";
+    }
+
+    function resolveHospitalLocation(statusObj) {
+        const raw = extractHospitalLocation(statusObj);
+        return normalizeLocationName(raw) || LOCATION.TORN;
+    }
+
+    function parseTravelDirection(statusObj) {
+        const desc = (statusObj?.description || "").trim();
+        const details = statusObj?.details || {};
+
+        if (details.from) {
+            return { direction: "from", place: details.from };
+        }
+
+        if (details.destination) {
+            return { direction: "to", place: details.destination };
+        }
+
+        if (details.country) {
+            return { direction: "to", place: details.country };
+        }
+
+        const returningMatch = desc.match(/returning to torn from\s+(.+)/i);
+        if (returningMatch) {
+            return { direction: "from", place: returningMatch[1] };
+        }
+
+        const travelingFromMatch = desc.match(/traveling from\s+(.+)/i);
+        if (travelingFromMatch) {
+            return { direction: "from", place: travelingFromMatch[1] };
+        }
+
+        const travelingToMatch = desc.match(/traveling to\s+(.+)/i);
+        if (travelingToMatch) {
+            return { direction: "to", place: travelingToMatch[1] };
+        }
+
+        return null;
+    }
+
+    function formatTravelingLocation(direction, destination) {
+        if (!destination) return null;
+        return direction === "from"
+            ? `Traveling from ${destination}`
+            : `Traveling to ${destination}`;
+    }
+
+    function determinePlayerLocation(statusObj) {
+        if (!statusObj) return null;
+        const stateValue = statusObj.state;
+
+        if (stateValue === "Hospital") {
+            return resolveHospitalLocation(statusObj);
+        }
+
+        if (stateValue === "Abroad") {
+            const destination = normalizeLocationName(getAbroadDestination(statusObj));
+            return destination || null;
+        }
+
+        if (stateValue === "Traveling") {
+            const travel = parseTravelDirection(statusObj);
+            if (!travel) return null;
+
+            const normalized = normalizeLocationName(travel.place);
+            if (!normalized) return null;
+            return formatTravelingLocation(travel.direction, normalized);
+        }
+
+        if (stateValue === "Okay") {
+            return LOCATION.TORN;
+        }
+
+        return LOCATION.TORN;
     }
 
     function getAbroadDestination(statusObj) {
@@ -242,6 +379,31 @@
             if (p.bs_estimate_human === undefined) {
                 p.bs_estimate_human = "--";
             }
+        });
+    }
+
+    function ensurePlayerDefaults(player) {
+        if (!player) return player;
+
+        const { rawData, location, ...rest } = player;
+        const canonicalLocation = player.location ?? determinePlayerLocation(player.status);
+        const bsEstimateHuman = player.bs_estimate_human === undefined ? "--" : player.bs_estimate_human;
+        const bsEstimateNumeric = deriveBsEstimateNumber(player);
+
+        return {
+            ...player,
+            location: canonicalLocation,
+            rawData: rawData || { ...rest },
+            bs_estimate_human: bsEstimateHuman,
+            bs_estimate: bsEstimateNumeric
+        };
+    }
+
+    function transformPlayerFromApi(rawPlayer) {
+        return ensurePlayerDefaults({
+            ...rawPlayer,
+            location: determinePlayerLocation(rawPlayer.status),
+            rawData: rawPlayer
         });
     }
 
@@ -275,6 +437,7 @@
                 const val = statsMap.get(numericId);
                 if (val !== undefined) {
                     p.bs_estimate_human = val;
+                    p.bs_estimate = deriveBsEstimateNumber(p);
                 }
             });
         } catch (err) {
@@ -425,6 +588,20 @@
         return numeric * multiplier;
     }
 
+    function deriveBsEstimateNumber(player) {
+        const parsedDirect = parseBattlestatValue(player?.bs_estimate);
+        if (typeof parsedDirect === "number" && !Number.isNaN(parsedDirect)) {
+            return parsedDirect;
+        }
+
+        const parsedHuman = parseBattlestatValue(player?.bs_estimate_human);
+        if (typeof parsedHuman === "number" && !Number.isNaN(parsedHuman)) {
+            return parsedHuman;
+        }
+
+        return null;
+    }
+
     function compareValues(a, b, direction) {
         const multiplier = direction === "asc" ? 1 : -1;
 
@@ -519,7 +696,7 @@
                     break;
                 }
 
-                const arr = data.eliminationteam || [];
+                const arr = (data.eliminationteam || []).map(transformPlayerFromApi);
                 appendBsEstimatePlaceholders(arr);
                 await maybeFetchFfScouterStats(arr);
                 combined = combined.concat(arr);
@@ -548,59 +725,76 @@
     function applyFilters(players) {
         const levelMin = parseInt(dom.levelMinInput.value || 0, 10);
         const levelMax = parseInt(dom.levelMaxInput.value || 100, 10);
+        const bsMinInputVal = dom.bsMinInput.value.trim();
+        const bsMaxInputVal = dom.bsMaxInput.value.trim();
+        const bsMin = parseBattlestatValue(bsMinInputVal);
+        const bsMax = parseBattlestatValue(bsMaxInputVal);
         const okayOnly = dom.filterOkayOnly.checked;
         const locationSelection = dom.locationFilter.value;
 
+        const hasBsMin = bsMinInputVal !== "" && typeof bsMin === "number" && !Number.isNaN(bsMin);
+        const hasBsMax = bsMaxInputVal !== "" && typeof bsMax === "number" && !Number.isNaN(bsMax);
+
         return players.filter(p => {
-            const st = p.status.state;
+            const st = p.status?.state;
+            const playerLocation = p.location;
             if (p.level < levelMin || p.level > levelMax) return false;
+            const bsValue = typeof p.bs_estimate === "number" ? p.bs_estimate : parseBattlestatValue(p.bs_estimate);
+            const bsIsNumber = typeof bsValue === "number" && !Number.isNaN(bsValue);
+            if (hasBsMin && (!bsIsNumber || bsValue < bsMin)) return false;
+            if (hasBsMax && (!bsIsNumber || bsValue > bsMax)) return false;
             if (okayOnly && st === "Hospital") return false;
             if (locationSelection === "all") return true;
 
-            const destination = getAbroadDestination(p.status) || "Unknown";
             if (locationSelection === "torn") {
-                return st !== "Abroad" && st !== "Traveling";
+                return playerLocation === LOCATION.TORN || (!playerLocation && st !== "Traveling" && st !== "Abroad");
             }
+
             if (locationSelection === "abroad") {
-                return st === "Abroad" || st === "Traveling";
+                return playerLocation && playerLocation !== LOCATION.TORN && !playerLocation.startsWith("Traveling ");
             }
+
             if (locationSelection === "traveling") {
-                return st === "Traveling";
+                return typeof playerLocation === "string" && playerLocation.startsWith("Traveling ");
             }
-            return (st === "Abroad" || st === "Traveling") && destination === locationSelection;
+
+            return playerLocation === locationSelection;
         });
     }
 
     function updateLocationFilterOptions(players) {
         const destinations = new Set();
+        const travelingDestinations = new Set();
+
         players.forEach(p => {
-            if (p.status.state === "Abroad" || p.status.state === "Traveling") {
-                destinations.add(getAbroadDestination(p.status) || "Unknown");
+            const loc = p.location;
+            if (!loc || loc === LOCATION.TORN) return;
+            if (loc.startsWith("Traveling ")) {
+                travelingDestinations.add(loc);
+            } else {
+                destinations.add(loc);
             }
         });
 
         const previous = dom.locationFilter.value || "all";
         dom.locationFilter.innerHTML = "";
 
-        const defaultOpt = document.createElement("option");
-        defaultOpt.value = "all";
-        defaultOpt.textContent = "All";
-        dom.locationFilter.appendChild(defaultOpt);
+        const baseOptions = [
+            { value: "all", label: "All" },
+            { value: "torn", label: "Torn" },
+            { value: "abroad", label: "Abroad (not in Torn)" },
+            { value: "traveling", label: "Traveling" }
+        ];
 
-        const tornOpt = document.createElement("option");
-        tornOpt.value = "torn";
-        tornOpt.textContent = "Torn";
-        dom.locationFilter.appendChild(tornOpt);
+        const validValues = new Set();
 
-        const abroadOpt = document.createElement("option");
-        abroadOpt.value = "abroad";
-        abroadOpt.textContent = "Abroad (not in Torn)";
-        dom.locationFilter.appendChild(abroadOpt);
-
-        const travelingOpt = document.createElement("option");
-        travelingOpt.value = "traveling";
-        travelingOpt.textContent = "Traveling";
-        dom.locationFilter.appendChild(travelingOpt);
+        baseOptions.forEach(({ value, label }) => {
+            const opt = document.createElement("option");
+            opt.value = value;
+            opt.textContent = label;
+            dom.locationFilter.appendChild(opt);
+            validValues.add(value);
+        });
 
         Array.from(destinations)
             .sort((a, b) => a.localeCompare(b))
@@ -609,12 +803,20 @@
                 opt.value = dest;
                 opt.textContent = dest;
                 dom.locationFilter.appendChild(opt);
+                validValues.add(dest);
             });
 
-        const staticOptions = new Set(["all", "torn", "abroad", "traveling"]);
-        if (staticOptions.has(previous)) {
-            dom.locationFilter.value = previous;
-        } else if (Array.from(destinations).includes(previous)) {
+        Array.from(travelingDestinations)
+            .sort((a, b) => a.localeCompare(b))
+            .forEach(dest => {
+                const opt = document.createElement("option");
+                opt.value = dest;
+                opt.textContent = dest;
+                dom.locationFilter.appendChild(opt);
+                validValues.add(dest);
+            });
+
+        if (validValues.has(previous)) {
             dom.locationFilter.value = previous;
         }
     }
@@ -627,7 +829,9 @@
             return;
         }
 
-        const players = state.teamPlayers[teamId] || [];
+        const players = (state.teamPlayers[teamId] || []).map(ensurePlayerDefaults);
+        state.teamPlayers[teamId] = players;
+
         updateLocationFilterOptions(players);
         const filtered = applyFilters(players);
         const sortedPlayers = sortPlayersList(filtered);
@@ -662,6 +866,7 @@
                 <td>${p.last_action.relative}</td>
                 <td>${p.attacks}</td>
                 <td>${p.bs_estimate_human || "--"}</td>
+                <td class="hidden raw-data-cell">${JSON.stringify(p.rawData || {}, null, 0)}</td>
             `;
 
             dom.playerTableBody.appendChild(row);
@@ -725,6 +930,8 @@
     function attachFilterListeners() {
         dom.levelMinInput.addEventListener("change", renderPlayers);
         dom.levelMaxInput.addEventListener("change", renderPlayers);
+        dom.bsMinInput.addEventListener("change", renderPlayers);
+        dom.bsMaxInput.addEventListener("change", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
         dom.locationFilter.addEventListener("change", renderPlayers);
     }

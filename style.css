@@ -179,6 +179,16 @@ tr.selected-row {
     margin-right: 12px;
 }
 
+.range-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.range-input {
+    width: 70px;
+}
+
 .abroad-list {
     margin-top: 6px;
 }
