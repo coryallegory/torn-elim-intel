@@ -89,8 +89,9 @@ h2, h3 {
 .apikey-display-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    justify-content: space-between;
+    column-gap: 6px;
+    row-gap: 4px;
+    justify-content: flex-start;
     flex-wrap: wrap;
 }
 
@@ -126,11 +127,11 @@ h2, h3 {
 }
 
 .apikey-prompt {
-    padding: 6px 8px;
+    padding: 4px 8px;
     border: 1px dashed #555;
     border-radius: 4px;
     color: #d8d8d8;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     background: #161616;
     line-height: 1.3;
@@ -230,9 +231,12 @@ tr.selected-row {
 .clear-button {
     background: #6c3636;
     border-color: #a24a4a;
-    padding: 6px 10px;
+    padding: 4px 8px;
     width: auto;
     flex-shrink: 0;
+    font-size: 14px;
+    line-height: 1;
+    min-height: 28px;
 }
 
 .storage-note {
