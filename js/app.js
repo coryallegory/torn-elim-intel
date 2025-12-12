@@ -154,6 +154,8 @@
                 ensureValidSelectedTeam();
                 renderTeams();
                 renderPlayers();
+            } else {
+                loadStaticSnapshot();
             }
             validateAndStart();
         } else {
@@ -812,6 +814,48 @@
         map.set(id, bs);
     }
 
+    function hasMeaningfulBsValue(value) {
+        if (value === null || value === undefined) return false;
+        if (typeof value === "string") return value.trim() !== "" && value !== "--";
+        if (typeof value === "number") return !Number.isNaN(value);
+        return false;
+    }
+
+    function preserveCachedBattleStats(teamId, players) {
+        if (state.ffApiKeyValid && state.ffapikey) return players;
+        const existing = state.teamPlayers[teamId];
+        if (!Array.isArray(existing) || !existing.length) return players;
+
+        const lookup = new Map();
+        existing.forEach(player => {
+            const id = getPlayerIdentifier(player);
+            if (id === null || id === undefined) return;
+            lookup.set(id, player);
+        });
+
+        players.forEach(player => {
+            const id = getPlayerIdentifier(player);
+            if (id === null || id === undefined) return;
+
+            const prior = lookup.get(id);
+            if (!prior) return;
+
+            const hasNewBs = hasMeaningfulBsValue(player.bs_estimate_human) || hasMeaningfulBsValue(player.bs_estimate);
+            if (hasNewBs) return;
+
+            if (hasMeaningfulBsValue(prior.bs_estimate_human)) {
+                player.bs_estimate_human = prior.bs_estimate_human;
+            }
+            if (hasMeaningfulBsValue(prior.bs_estimate)) {
+                player.bs_estimate = prior.bs_estimate;
+            } else {
+                player.bs_estimate = deriveBsEstimateNumber(player);
+            }
+        });
+
+        return players;
+    }
+
     function attachSortListeners() {
         addSortListeners(dom.teamTableHeaders, "team");
         addSortListeners(dom.playerTableHeaders, "player");
@@ -1074,7 +1118,8 @@
             }
 
             console.log(`Player refresh API calls: ${callCount}`);
-            state.cacheTeamPlayers(teamId, combined);
+            const merged = preserveCachedBattleStats(teamId, combined);
+            state.cacheTeamPlayers(teamId, merged);
             renderPlayers();
             dom.teamIcon.classList.add("hidden");
         })();
