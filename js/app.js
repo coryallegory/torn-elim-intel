@@ -1,13 +1,19 @@
 (function () {
     const dom = {
         apikeyInput: document.getElementById("apikey-input"),
+        apikeyInputRow: document.getElementById("apikey-input-row"),
         apikeyRemember: document.getElementById("apikey-remember"),
+        apikeyRememberWrap: document.getElementById("apikey-remember-wrap"),
         apikeyStatus: document.getElementById("apikey-status"),
         apikeyApply: document.getElementById("apikey-apply"),
+        apikeyPrompt: document.getElementById("apikey-prompt"),
         ffapikeyInput: document.getElementById("ffapikey-input"),
+        ffapikeyInputRow: document.getElementById("ffapikey-input-row"),
         ffapikeyRemember: document.getElementById("ffapikey-remember"),
+        ffapikeyRememberWrap: document.getElementById("ffapikey-remember-wrap"),
         ffapikeyStatus: document.getElementById("ffapikey-status"),
         ffapikeyApply: document.getElementById("ffapikey-apply"),
+        ffapikeyPrompt: document.getElementById("ffapikey-prompt"),
         userBox: document.getElementById("userinfo-box"),
         userInfoContent: document.getElementById("user-info-content"),
         teamTableBody: document.getElementById("team-table-body"),
@@ -106,7 +112,9 @@
     }
 
     function setApiKeyApplyMode() {
-        dom.apikeyInput.classList.remove("hidden");
+        dom.apikeyInputRow.classList.remove("hidden");
+        dom.apikeyPrompt.classList.add("hidden");
+        dom.apikeyRememberWrap.classList.remove("hidden");
         dom.apikeyApply.textContent = "Apply";
         dom.apikeyApply.dataset.mode = "apply";
         dom.apikeyApply.classList.remove("clear-button");
@@ -114,14 +122,18 @@
 
     function setApiKeyClearMode() {
         dom.apikeyInput.value = "";
-        dom.apikeyInput.classList.add("hidden");
+        dom.apikeyInputRow.classList.add("hidden");
+        dom.apikeyPrompt.classList.remove("hidden");
+        dom.apikeyRememberWrap.classList.add("hidden");
         dom.apikeyApply.textContent = "✕";
         dom.apikeyApply.dataset.mode = "clear";
         dom.apikeyApply.classList.add("clear-button");
     }
 
     function setFfApiKeyApplyMode() {
-        dom.ffapikeyInput.classList.remove("hidden");
+        dom.ffapikeyInputRow.classList.remove("hidden");
+        dom.ffapikeyPrompt.classList.add("hidden");
+        dom.ffapikeyRememberWrap.classList.remove("hidden");
         dom.ffapikeyApply.textContent = "Apply";
         dom.ffapikeyApply.dataset.mode = "apply";
         dom.ffapikeyApply.classList.remove("clear-button");
@@ -129,7 +141,9 @@
 
     function setFfApiKeyClearMode() {
         dom.ffapikeyInput.value = "";
-        dom.ffapikeyInput.classList.add("hidden");
+        dom.ffapikeyInputRow.classList.add("hidden");
+        dom.ffapikeyPrompt.classList.remove("hidden");
+        dom.ffapikeyRememberWrap.classList.add("hidden");
         dom.ffapikeyApply.textContent = "✕";
         dom.ffapikeyApply.dataset.mode = "clear";
         dom.ffapikeyApply.classList.add("clear-button");
