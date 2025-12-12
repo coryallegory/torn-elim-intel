@@ -111,6 +111,7 @@ h2, h3 {
     gap: 6px;
     font-size: 12px;
     color: #cfcfcf;
+    white-space: nowrap;
 }
 
 .remember-toggle input {
