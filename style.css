@@ -292,6 +292,17 @@ tr.selected-row {
     margin-top: 10px;
 }
 
+.user-info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.user-team-label {
+    font-weight: 600;
+}
+
 #player-section {
     border: 1px solid #666;
 }
