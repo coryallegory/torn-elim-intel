@@ -491,7 +491,7 @@
         const nameContent = profileHref
             ? `<a href="${profileHref}" target="_blank" rel="noopener noreferrer" class="inherit-link"><strong>${u.name}</strong></a>`
             : `<strong>${u.name}</strong>`;
-        const levelLabel = `[Level ${u.level}]`;
+        const levelLabel = `[${u.level}]`;
         const teamLabel = teamText
             ? `, <span class="user-team-label">${teamText}</span>`
             : "";
