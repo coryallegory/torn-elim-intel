@@ -28,6 +28,11 @@ window.state = {
 
         this.apikey = this.rememberApiKey ? (localStorage.getItem("apikey") || "") : "";
         this.ffapikey = this.rememberFfApiKey ? (localStorage.getItem("ffapikey") || "") : "";
+
+        if (!this.apikey) {
+            this.clearCachedData();
+            return;
+        }
         try {
             const userRaw = localStorage.getItem("user");
             const teamsRaw = localStorage.getItem("teams");
@@ -46,13 +51,7 @@ window.state = {
             this.hidePinkPowerTeam = false;
         } catch (err) {
             console.error("Failed to restore cached state", err);
-            this.teamPlayers = {};
-            this.teamPlayersTimestamp = {};
-            this.metadataTimestamp = 0;
-            this.teams = [];
-            this.selectedTeamId = null;
-            this.user = null;
-            this.hidePinkPowerTeam = false;
+            this.clearCachedData();
         }
     },
 
@@ -65,6 +64,24 @@ window.state = {
         } else {
             localStorage.removeItem("apikey");
         }
+    },
+
+    clearCachedData() {
+        this.user = null;
+        this.teams = [];
+        this.teamPlayers = {};
+        this.teamPlayersTimestamp = {};
+        this.metadataTimestamp = 0;
+        this.selectedTeamId = null;
+        this.hidePinkPowerTeam = false;
+
+        localStorage.removeItem("user");
+        localStorage.removeItem("teams");
+        localStorage.removeItem("teamPlayers");
+        localStorage.removeItem("teamPlayersTimestamp");
+        localStorage.removeItem("metadataTimestamp");
+        localStorage.removeItem("selectedTeamId");
+        localStorage.removeItem("hidePinkPowerTeam");
     },
 
     saveFfApiKey(key, rememberKey = false) {

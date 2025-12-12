@@ -243,23 +243,13 @@
     }
 
     function clearAuthenticatedState() {
-        state.user = null;
+        state.clearCachedData();
         dom.userInfoContent.innerHTML = "";
         dom.userBox.classList.add("hidden");
         dom.metadataTimerLabel.textContent = "Next refresh: --";
         dom.teamTimerLabel.textContent = "Next refresh: --";
         dom.metadataIcon.classList.add("hidden");
         dom.teamIcon.classList.add("hidden");
-
-        state.metadataTimestamp = 0;
-        localStorage.setItem("metadataTimestamp", "0");
-
-        state.teams = [];
-        state.selectedTeamId = null;
-        state.teamPlayers = {};
-        state.teamPlayersTimestamp = {};
-        localStorage.setItem("teamPlayers", JSON.stringify(state.teamPlayers));
-        localStorage.setItem("teamPlayersTimestamp", JSON.stringify(state.teamPlayersTimestamp));
 
         renderTeams();
         renderPlayers();
