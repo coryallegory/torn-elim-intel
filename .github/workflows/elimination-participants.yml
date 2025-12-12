@@ -6,7 +6,11 @@ on:
       api-key-secret:
         description: "Name of the repository secret that stores the Torn API key"
         required: false
-        default: "TORN_API_KEY"
+        default: "API_KEY"
+      ff-api-key-secret:
+        description: "Name of the repository secret that stores the FFScouter API key"
+        required: false
+        default: "FF_API_KEY"
 
 jobs:
   fetch-elimination-participants:
