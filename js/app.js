@@ -764,10 +764,13 @@
         const { rawData, location, ...rest } = player;
         const status = player.status || { state: "--", description: "--" };
         const lastActionRaw = player.last_action || {};
+        const lastActionTimestamp = typeof lastActionRaw.timestamp === "number"
+            ? lastActionRaw.timestamp
+            : Number(lastActionRaw.timestamp);
         const lastAction = {
             relative: lastActionRaw.relative ?? "--",
             status: lastActionRaw.status ?? "Unknown",
-            timestamp: lastActionRaw.timestamp ?? null
+            timestamp: Number.isFinite(lastActionTimestamp) ? lastActionTimestamp : null
         };
         const canonicalLocation = player.location ?? determinePlayerLocation(status);
         const bsEstimateHuman = player.bs_estimate_human === undefined ? "--" : player.bs_estimate_human;
@@ -784,6 +787,16 @@
             bs_estimate: bsEstimateNumeric,
             attacks
         };
+    }
+
+    function getLastActionActivityClass(lastAction, nowSec) {
+        const timestamp = lastAction?.timestamp;
+        if (!Number.isFinite(timestamp)) return "dot-grey";
+
+        const elapsed = Math.max(0, nowSec - timestamp);
+        if (elapsed < 5 * 60) return "dot-green";
+        if (elapsed < 15 * 60) return "dot-yellow";
+        return "dot-grey";
     }
 
     function transformPlayerFromApi(rawPlayer) {
@@ -1320,6 +1333,7 @@
             const hospitalUntil = p.status.until;
             let statusClass = mapStateColor(p.status.state);
             let statusCellContent = baseStatusText;
+            const activityClass = getLastActionActivityClass(p.last_action, nowSec);
 
             if (p.status.state === "Hospital" && hospitalUntil) {
                 const remaining = hospitalUntil - nowSec;
@@ -1332,9 +1346,14 @@
             const attackUrl = `https://www.torn.com/loader.php?sid=attack&user2ID=${p.id}`;
 
             row.innerHTML = `
-                <td><a href="https://www.torn.com/profiles.php?XID=${p.id}" target="_blank" rel="noopener noreferrer">${p.name}</a></td>
-                <td><a href="${attackUrl}" target="_blank" rel="noopener noreferrer">${p.bs_estimate_human || "--"}</a></td>
+                <td>
+                    <div class="player-name-cell">
+                        <span class="activity-dot ${activityClass}" aria-hidden="true"></span>
+                        <a href="https://www.torn.com/profiles.php?XID=${p.id}" target="_blank" rel="noopener noreferrer">${p.name}</a>
+                    </div>
+                </td>
                 <td>${p.level}</td>
+                <td><a href="${attackUrl}" target="_blank" rel="noopener noreferrer">${p.bs_estimate_human || "--"}</a></td>
                 <td>${p.attacks}</td>
                 <td class="status-cell ${statusClass}">${statusCellContent}</td>
                 <td>${p.last_action.relative}</td>
