@@ -1174,6 +1174,7 @@
 
         return players.filter(p => {
             const statusText = simplifyStatus(p.status);
+            const statusState = p.status?.state;
             const playerLocation = p.location;
             if (p.level < levelMin || p.level > levelMax) return false;
             const bsValue = typeof p.bs_estimate === "number" ? p.bs_estimate : parseBattlestatValue(p.bs_estimate);
@@ -1182,13 +1183,14 @@
             if (hasBsMax && (!bsIsNumber || bsValue > bsMax)) return false;
             if (okayOnly) {
                 const isOkayStatus = statusText === "Okay" || statusText.startsWith("In ");
-                const isHospital = p.status?.state === "Hospital";
-                if (!isOkayStatus || isHospital) return false;
+                const disallowedStates = new Set(["Jail", "Federal", "Hospital"]);
+                const isDisallowedState = disallowedStates.has(statusState);
+                if (!isOkayStatus || isDisallowedState) return false;
             }
             if (locationSelection === "all") return true;
 
             if (locationSelection === "torn") {
-                return playerLocation === LOCATION.TORN || (!playerLocation && st !== "Traveling" && st !== "Abroad");
+                return playerLocation === LOCATION.TORN || (!playerLocation && statusState !== "Traveling" && statusState !== "Abroad");
             }
 
             if (locationSelection === "abroad") {
