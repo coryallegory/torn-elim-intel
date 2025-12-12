@@ -11,6 +11,10 @@ on:
         description: "Name of the repository secret that stores the FFScouter API key"
         required: false
         default: "FF_API_KEY"
+      request-delay-seconds:
+        description: "Delay in seconds between API requests"
+        required: false
+        default: "2"
 
 jobs:
   fetch-elimination-participants:
@@ -30,6 +34,8 @@ jobs:
       - name: Build elimination participants file
         env:
           API_KEY: ${{ secrets[inputs.api-key-secret] }}
+          FF_API_KEY: ${{ secrets[inputs.ff-api-key-secret] }}
+          REQUEST_DELAY_SECONDS: ${{ inputs.request-delay-seconds }}
         run: |
           if [ -z "$API_KEY" ]; then
             echo "API key secret \"${{ inputs.api-key-secret }}\" is not set." >&2
