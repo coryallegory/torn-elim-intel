@@ -456,9 +456,10 @@
             : "";
 
         dom.userInfoContent.innerHTML = `
-            <div>${userLink}<strong>${u.name}</strong> [${u.level}]</div>
+            <div class="user-info-header">
+                ${userLink}<strong>${u.name}</strong> [${u.level}]${teamText ? ` <span class="user-team-label">Team: ${teamText}</span>` : ""}
+            </div>
             <div class="${stateColor}">${statusText}</div>
-            <div>Team: ${teamText}</div>
         `;
     }
 
@@ -544,10 +545,6 @@
 
     function formatUserTeamLabel(teamInfo) {
         if (!teamInfo) return "Not listed in snapshot";
-
-        if (teamInfo.id && teamInfo.name) {
-            return `${teamInfo.name} [${teamInfo.id}]`;
-        }
 
         if (teamInfo.name) return teamInfo.name;
         if (teamInfo.id) return `ID ${teamInfo.id}`;
