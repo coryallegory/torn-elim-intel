@@ -1042,15 +1042,13 @@
             if (t.eliminated === true) row.classList.add("eliminated-row");
 
             row.innerHTML = `
-                <td>${t.id}</td>
                 <td>${t.name}</td>
-                <td>${formatTeamValue(t.participants)}</td>
+                <td>${formatTeamValue(t.lives)}</td>
                 <td>${formatTeamValue(t.score)}</td>
+                <td>${formatTeamValue(t.attacks)}</td>
                 <td>${formatTeamValue(t.wins)}</td>
                 <td>${formatTeamValue(t.losses)}</td>
-                <td>${formatTeamValue(t.lives)}</td>
-                <td>${formatTeamValue(t.position)}</td>
-                <td>${formatTeamValue(t.eliminated)}</td>
+                <td>${formatTeamValue(t.participants)}</td>
             `;
 
             row.addEventListener("click", () => handleTeamSelect(t.id));
