@@ -14,10 +14,12 @@
 
             <!-- API Key+User Box -->
             <div id="apikey-box">
+                <p class="storage-note">API Keys are stored locally. This web app runs entirely on your device and only calls official Torn APIs and FFScouter.</p>
+
                 <div class="apikey-row">
                     <div class="apikey-label">
-                        <span class="apikey-title">Torn Public API Key</span>
-                        <span class="apikey-subtext">Required for all data</span>
+                        <span class="apikey-title">Torn API Key (Public)</span>
+                        <span class="apikey-subtext">Required for data updates</span>
                     </div>
                     <div class="apikey-control-group">
                         <div class="apikey-input-row" id="apikey-input-row">
@@ -34,8 +36,8 @@
 
                 <div class="apikey-row">
                     <div class="apikey-label">
-                        <span class="apikey-title">FFScouter API Key (for Est Battle Stats)</span>
-                        <span class="apikey-subtext">Optional, used for stat estimates</span>
+                        <span class="apikey-title">FFScouter API Key</span>
+                        <span class="apikey-subtext">Optional, used for Battle Stat Estimates</span>
                     </div>
                     <div class="apikey-control-group">
                         <div class="apikey-input-row" id="ffapikey-input-row">
@@ -49,8 +51,6 @@
                     </div>
                     <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
                 </div>
-
-                <p class="storage-note">Keys are stored locally. This web app runs entirely on your device and only calls official Torn APIs and FFScouter.</p>
 
                 <div id="userinfo-box" class="userinfo-box hidden">
                     <div id="user-info-content"></div>
