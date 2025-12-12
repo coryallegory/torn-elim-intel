@@ -207,6 +207,8 @@
         if (data.error || !data.profile) {
             stopIntervals();
             clearAuthenticatedState();
+            state.clearApiKey();
+            dom.apikeyRemember.checked = false;
             showNoKey("API key invalid");
             await loadStaticSnapshot();
             return;
@@ -236,6 +238,7 @@
     }
 
     function showNoKey(message = "No API key loaded") {
+        state.clearApiKey();
         setApiKeyApplyMode();
         dom.apikeyInput.value = "";
         dom.apikeyStatus.textContent = message;
@@ -334,6 +337,7 @@
 
     function showNoFfKey() {
         state.ffApiKeyValid = false;
+        state.clearFfApiKey();
         setFfApiKeyApplyMode();
         dom.ffapikeyInput.value = "";
         dom.ffapikeyStatus.textContent = "Not configured";
@@ -355,6 +359,8 @@
 
         if (!valid) {
             state.ffApiKeyValid = false;
+            state.clearFfApiKey();
+            dom.ffapikeyRemember.checked = false;
             dom.ffapikeyStatus.textContent = data && data.error ? "FFScouter key invalid" : "FFScouter key rejected";
             dom.ffapikeyStatus.classList.add("status-error");
             setFfApiKeyApplyMode();
