@@ -86,6 +86,14 @@ h2, h3 {
     align-items: center;
 }
 
+.apikey-display-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
 .apikey-input-row input {
     flex: 1;
 }
@@ -118,12 +126,14 @@ h2, h3 {
 }
 
 .apikey-prompt {
-    padding: 8px;
+    padding: 6px 8px;
     border: 1px dashed #555;
     border-radius: 4px;
-    color: #e5e5e5;
+    color: #d8d8d8;
+    font-size: 12px;
     font-weight: 600;
     background: #161616;
+    line-height: 1.3;
 }
 
 input[type="text"], input[type="number"] {
@@ -220,8 +230,9 @@ tr.selected-row {
 .clear-button {
     background: #6c3636;
     border-color: #a24a4a;
-    width: 34px;
-    padding: 6px 0;
+    padding: 6px 10px;
+    width: auto;
+    flex-shrink: 0;
 }
 
 .storage-note {
@@ -324,7 +335,8 @@ tr.selected-row {
     .apikey-row input,
     .apikey-row button,
     .apikey-row .inline-status,
-    #player-filters input,
+    #player-filters input[type="text"],
+    #player-filters input[type="number"],
     #player-filters select,
     #player-filters button {
         width: 100%;

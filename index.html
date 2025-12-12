@@ -22,9 +22,12 @@ To avoid rate-limit issues, keep only one tab open with the same API keys.</p>
                         <div class="apikey-control-group">
                             <div class="apikey-input-row" id="apikey-input-row">
                                 <input type="text" id="apikey-input" placeholder="Torn API Key (Public)">
-                                <button id="apikey-apply" data-mode="apply">Apply</button>
+                                <button id="apikey-apply">Apply</button>
                             </div>
-                            <div id="apikey-prompt" class="apikey-prompt hidden">Torn API Key (Public)</div>
+                            <div class="apikey-display-row hidden" id="apikey-display-row">
+                                <div id="apikey-prompt" class="apikey-prompt">Torn API Key (Public)</div>
+                                <button id="apikey-clear" class="clear-button">Clear</button>
+                            </div>
                             <div class="apikey-meta-row">
                                 <span class="apikey-subtext">Required for data updates</span>
                                 <label class="remember-toggle" id="apikey-remember-wrap">
@@ -40,9 +43,12 @@ To avoid rate-limit issues, keep only one tab open with the same API keys.</p>
                         <div class="apikey-control-group">
                             <div class="apikey-input-row" id="ffapikey-input-row">
                                 <input type="text" id="ffapikey-input" placeholder="FFScouter API Key">
-                                <button id="ffapikey-apply" data-mode="apply">Apply</button>
+                                <button id="ffapikey-apply">Apply</button>
                             </div>
-                            <div id="ffapikey-prompt" class="apikey-prompt hidden">FFScouter API Key</div>
+                            <div class="apikey-display-row hidden" id="ffapikey-display-row">
+                                <div id="ffapikey-prompt" class="apikey-prompt">FFScouter API Key</div>
+                                <button id="ffapikey-clear" class="clear-button">Clear</button>
+                            </div>
                             <div class="apikey-meta-row">
                                 <span class="apikey-subtext">Optional, used for Battle Stat Estimates</span>
                                 <label class="remember-toggle" id="ffapikey-remember-wrap">

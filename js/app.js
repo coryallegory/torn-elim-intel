@@ -6,14 +6,18 @@
         apikeyRememberWrap: document.getElementById("apikey-remember-wrap"),
         apikeyStatus: document.getElementById("apikey-status"),
         apikeyApply: document.getElementById("apikey-apply"),
+        apikeyClear: document.getElementById("apikey-clear"),
         apikeyPrompt: document.getElementById("apikey-prompt"),
+        apikeyDisplayRow: document.getElementById("apikey-display-row"),
         ffapikeyInput: document.getElementById("ffapikey-input"),
         ffapikeyInputRow: document.getElementById("ffapikey-input-row"),
         ffapikeyRemember: document.getElementById("ffapikey-remember"),
         ffapikeyRememberWrap: document.getElementById("ffapikey-remember-wrap"),
         ffapikeyStatus: document.getElementById("ffapikey-status"),
         ffapikeyApply: document.getElementById("ffapikey-apply"),
+        ffapikeyClear: document.getElementById("ffapikey-clear"),
         ffapikeyPrompt: document.getElementById("ffapikey-prompt"),
+        ffapikeyDisplayRow: document.getElementById("ffapikey-display-row"),
         userBox: document.getElementById("userinfo-box"),
         userInfoContent: document.getElementById("user-info-content"),
         teamTableBody: document.getElementById("team-table-body"),
@@ -113,40 +117,32 @@
 
     function setApiKeyApplyMode() {
         dom.apikeyInputRow.classList.remove("hidden");
+        dom.apikeyDisplayRow.classList.add("hidden");
         dom.apikeyPrompt.classList.add("hidden");
         dom.apikeyRememberWrap.classList.remove("hidden");
-        dom.apikeyApply.textContent = "Apply";
-        dom.apikeyApply.dataset.mode = "apply";
-        dom.apikeyApply.classList.remove("clear-button");
     }
 
     function setApiKeyClearMode() {
         dom.apikeyInput.value = "";
         dom.apikeyInputRow.classList.add("hidden");
+        dom.apikeyDisplayRow.classList.remove("hidden");
         dom.apikeyPrompt.classList.remove("hidden");
         dom.apikeyRememberWrap.classList.add("hidden");
-        dom.apikeyApply.textContent = "✕";
-        dom.apikeyApply.dataset.mode = "clear";
-        dom.apikeyApply.classList.add("clear-button");
     }
 
     function setFfApiKeyApplyMode() {
         dom.ffapikeyInputRow.classList.remove("hidden");
+        dom.ffapikeyDisplayRow.classList.add("hidden");
         dom.ffapikeyPrompt.classList.add("hidden");
         dom.ffapikeyRememberWrap.classList.remove("hidden");
-        dom.ffapikeyApply.textContent = "Apply";
-        dom.ffapikeyApply.dataset.mode = "apply";
-        dom.ffapikeyApply.classList.remove("clear-button");
     }
 
     function setFfApiKeyClearMode() {
         dom.ffapikeyInput.value = "";
         dom.ffapikeyInputRow.classList.add("hidden");
+        dom.ffapikeyDisplayRow.classList.remove("hidden");
         dom.ffapikeyPrompt.classList.remove("hidden");
         dom.ffapikeyRememberWrap.classList.add("hidden");
-        dom.ffapikeyApply.textContent = "✕";
-        dom.ffapikeyApply.dataset.mode = "clear";
-        dom.ffapikeyApply.classList.add("clear-button");
     }
 
     function init() {
@@ -184,10 +180,6 @@
         }
 
         dom.apikeyApply.addEventListener("click", () => {
-            if (dom.apikeyApply.dataset.mode === "clear") {
-                clearApiKeyAndUi();
-                return;
-            }
             const key = dom.apikeyInput.value.trim();
             if (!key) {
                 showNoKey();
@@ -197,11 +189,11 @@
             validateAndStart();
         });
 
+        dom.apikeyClear.addEventListener("click", () => {
+            clearApiKeyAndUi();
+        });
+
         dom.ffapikeyApply.addEventListener("click", () => {
-            if (dom.ffapikeyApply.dataset.mode === "clear") {
-                clearFfApiKeyAndUi();
-                return;
-            }
             const key = dom.ffapikeyInput.value.trim();
             if (!key) {
                 clearFfApiKeyAndUi();
@@ -209,6 +201,10 @@
             }
             state.saveFfApiKey(key, dom.ffapikeyRemember.checked);
             validateFfApiKey();
+        });
+
+        dom.ffapikeyClear.addEventListener("click", () => {
+            clearFfApiKeyAndUi();
         });
 
         attachFilterListeners();
