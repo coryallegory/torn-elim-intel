@@ -29,6 +29,7 @@
         bsMinInput: document.getElementById("bs-min"),
         bsMaxInput: document.getElementById("bs-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
+        filterActiveOnly: document.getElementById("filter-active-only"),
         locationFilter: document.getElementById("location-filter"),
         metadataTimerLabel: document.getElementById("metadata-refresh-timer"),
         metadataIcon: document.getElementById("metadata-refresh-icon"),
@@ -1207,7 +1208,9 @@
         const bsMin = parseBattlestatValue(bsMinInputVal);
         const bsMax = parseBattlestatValue(bsMaxInputVal);
         const okayOnly = dom.filterOkayOnly.checked;
+        const activeOnly = dom.filterActiveOnly.checked;
         const locationSelection = dom.locationFilter.value;
+        const nowSec = Math.floor(Date.now() / 1000);
 
         const hasBsMin = bsMinInputVal !== "" && typeof bsMin === "number" && !Number.isNaN(bsMin);
         const hasBsMax = bsMaxInputVal !== "" && typeof bsMax === "number" && !Number.isNaN(bsMax);
@@ -1225,6 +1228,10 @@
                 const disallowedStates = new Set(["Jail", "Federal", "Hospital"]);
                 const isDisallowedState = disallowedStates.has(statusState);
                 if (!isOkayStatus || isDisallowedState) return false;
+            }
+            if (activeOnly) {
+                const activityClass = getLastActionActivityClass(p.last_action, nowSec);
+                if (activityClass === "dot-grey") return false;
             }
             if (locationSelection === "all") return true;
 
@@ -1429,6 +1436,7 @@
         dom.bsMinInput.addEventListener("input", renderPlayers);
         dom.bsMaxInput.addEventListener("input", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
+        dom.filterActiveOnly.addEventListener("change", renderPlayers);
         dom.locationFilter.addEventListener("change", renderPlayers);
     }
 
