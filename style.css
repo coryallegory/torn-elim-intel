@@ -26,6 +26,15 @@ h2, h3 {
     margin-top: 0;
 }
 
+.inherit-link {
+    color: inherit;
+}
+
+.inherit-link:hover,
+.inherit-link:focus {
+    color: inherit;
+}
+
 .grouped-panel {
     position: relative;
     padding-top: 24px;
