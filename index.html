@@ -14,42 +14,45 @@
 
             <!-- API Key+User Box -->
             <div id="apikey-box">
-                <p class="storage-note">API Keys are stored locally. This web app runs entirely on your device and only calls official Torn APIs and FFScouter.</p>
+                <p class="storage-note">This web app runs entirely on your device and only calls official Torn APIs and FFScouter.
+To avoid rate-limit issues, keep only one tab open with the same API keys.</p>
 
-                <div class="apikey-row">
-                    <div class="apikey-label">
-                        <span class="apikey-title">Torn API Key (Public)</span>
-                        <span class="apikey-subtext">Required for data updates</span>
-                    </div>
-                    <div class="apikey-control-group">
-                        <div class="apikey-input-row" id="apikey-input-row">
-                            <input type="text" id="apikey-input" placeholder="Enter API key">
-                            <button id="apikey-apply" data-mode="apply">Apply</button>
+                <div class="apikey-grid">
+                    <div class="apikey-row">
+                        <div class="apikey-control-group">
+                            <div class="apikey-input-row" id="apikey-input-row">
+                                <input type="text" id="apikey-input" placeholder="Torn API Key (Public)">
+                                <button id="apikey-apply" data-mode="apply">Apply</button>
+                            </div>
+                            <div id="apikey-prompt" class="apikey-prompt hidden">Torn API Key (Public)</div>
+                            <div class="apikey-meta-row">
+                                <span class="apikey-subtext">Required for data updates</span>
+                                <label class="remember-toggle" id="apikey-remember-wrap">
+                                    <input type="checkbox" id="apikey-remember">
+                                    <span>Remember on this device</span>
+                                </label>
+                            </div>
                         </div>
-                        <label class="remember-toggle">
-                            <input type="checkbox" id="apikey-remember">
-                            <span>Remember on this device</span>
-                        </label>
+                        <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
                     </div>
-                    <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
-                </div>
 
-                <div class="apikey-row">
-                    <div class="apikey-label">
-                        <span class="apikey-title">FFScouter API Key</span>
-                        <span class="apikey-subtext">Optional, used for Battle Stat Estimates</span>
-                    </div>
-                    <div class="apikey-control-group">
-                        <div class="apikey-input-row" id="ffapikey-input-row">
-                            <input type="text" id="ffapikey-input" placeholder="Enter FFScouter API key">
-                            <button id="ffapikey-apply" data-mode="apply">Apply</button>
+                    <div class="apikey-row">
+                        <div class="apikey-control-group">
+                            <div class="apikey-input-row" id="ffapikey-input-row">
+                                <input type="text" id="ffapikey-input" placeholder="FFScouter API Key">
+                                <button id="ffapikey-apply" data-mode="apply">Apply</button>
+                            </div>
+                            <div id="ffapikey-prompt" class="apikey-prompt hidden">FFScouter API Key</div>
+                            <div class="apikey-meta-row">
+                                <span class="apikey-subtext">Optional, used for Battle Stat Estimates</span>
+                                <label class="remember-toggle" id="ffapikey-remember-wrap">
+                                    <input type="checkbox" id="ffapikey-remember">
+                                    <span>Remember on this device</span>
+                                </label>
+                            </div>
                         </div>
-                        <label class="remember-toggle">
-                            <input type="checkbox" id="ffapikey-remember">
-                            <span>Remember on this device</span>
-                        </label>
+                        <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
                     </div>
-                    <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
                 </div>
 
                 <div id="userinfo-box" class="userinfo-box hidden">
