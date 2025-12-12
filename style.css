@@ -358,13 +358,18 @@ tr.selected-row {
     }
 
     .apikey-row input,
-    .apikey-row button,
+    .apikey-input-row button,
     .apikey-row .inline-status,
     #player-filters input[type="text"],
     #player-filters input[type="number"],
     #player-filters select,
     #player-filters button {
         width: 100%;
+    }
+
+    .apikey-display-row .clear-button {
+        width: auto;
+        margin-left: auto;
     }
 
     #player-filters {
