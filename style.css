@@ -42,6 +42,8 @@ h2, h3 {
 .inline-status {
     margin-left: 12px;
     align-self: center;
+    justify-self: start;
+    text-align: left;
 }
 
 
