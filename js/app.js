@@ -1077,7 +1077,6 @@
                 <td>${t.name}</td>
                 <td>${formatTeamValue(t.lives)}</td>
                 <td>${formatTeamValue(t.score)}</td>
-                <td>${formatTeamValue(t.attacks)}</td>
                 <td>${formatTeamValue(t.wins)}</td>
                 <td>${formatTeamValue(t.losses)}</td>
                 <td>${formatTeamValue(t.participants)}</td>
