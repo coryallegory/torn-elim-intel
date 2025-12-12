@@ -484,13 +484,21 @@
         const statusText = simplifyStatus(u.status);
         const teamText = formatUserTeamLabel(u.eliminationTeam);
         const userId = getPlayerIdentifier(u);
-        const userLink = userId
-            ? `<a href="https://www.torn.com/profiles.php?XID=${userId}" target="_blank" rel="noopener noreferrer" class="inherit-link">${userId}</a> `
+        const profileHref = userId
+            ? `https://www.torn.com/profiles.php?XID=${userId}`
+            : null;
+        const nameContent = profileHref
+            ? `<a href="${profileHref}" target="_blank" rel="noopener noreferrer" class="inherit-link"><strong>${u.name}</strong></a>`
+            : `<strong>${u.name}</strong>`;
+        const levelLabel = `[Level ${u.level}]`;
+        const attacksLabel = teamText ? formatUserAttacks(u.attacks) : "";
+        const teamLabel = teamText
+            ? `, <span class="user-team-label">${teamText}${attacksLabel ? ` ${attacksLabel}` : ""}</span>`
             : "";
 
         dom.userInfoContent.innerHTML = `
             <div class="user-info-header">
-                ${userLink}<strong>${u.name}</strong> [${u.level}]${teamText ? ` <span class="user-team-label">${teamText}</span>` : ""}
+                ${nameContent} ${levelLabel}${teamLabel}
             </div>
             <div class="${stateColor}">${statusText}</div>
         `;
@@ -574,6 +582,11 @@
                 eliminationTeam: user.eliminationTeam ?? null
             };
         }
+    }
+
+    function formatUserAttacks(attacks) {
+        if (attacks === undefined || attacks === null) return "";
+        return `[${attacks} Attacks]`;
     }
 
     function formatUserTeamLabel(teamInfo) {
@@ -1115,6 +1128,33 @@
         renderPlayers();
     }
 
+    function updateUserFromTeamPlayers(teamId, players) {
+        const user = state.user;
+        const userId = getPlayerIdentifier(user);
+        if (!user || userId === null || userId === undefined) return;
+
+        const matched = (players || []).find(p => getPlayerIdentifier(p) === userId);
+        if (!matched) return;
+
+        const teamMeta = (state.teams || []).find(
+            t => normalizeTeamId(t.id) === normalizeTeamId(teamId)
+        );
+
+        const eliminationTeam = teamMeta
+            ? { id: teamMeta.id, name: teamMeta.name }
+            : user.eliminationTeam ?? { id: teamId };
+
+        const updatedUser = {
+            ...user,
+            eliminationTeam,
+            attacks: matched.attacks ?? user.attacks
+        };
+
+        state.user = updatedUser;
+        localStorage.setItem("user", JSON.stringify(updatedUser || null));
+        renderUserInfo();
+    }
+
     async function refreshTeamPlayers(force = false) {
         const teamId = state.selectedTeamId;
         if (!teamId) return;
@@ -1174,6 +1214,7 @@
             console.log(`Player refresh API calls: ${callCount}`);
             const merged = preserveCachedBattleStats(teamId, combined);
             state.cacheTeamPlayers(teamId, merged);
+            updateUserFromTeamPlayers(teamId, merged);
             renderPlayers();
             dom.teamIcon.classList.add("hidden");
         })();
@@ -1198,6 +1239,7 @@
         if (!team || !Array.isArray(team.players)) return false;
 
         state.teamPlayers[teamId] = team.players.map(p => ensurePlayerDefaults({ ...p }));
+        updateUserFromTeamPlayers(teamId, state.teamPlayers[teamId]);
         renderPlayers();
         return true;
     }
