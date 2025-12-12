@@ -453,7 +453,8 @@
             ]);
 
             if (!userData.error && userData.profile) {
-                state.user = await attachOfflineTeamToUser(userData.profile);
+                const normalizedUser = normalizeUserProfile(userData.profile);
+                state.user = await attachOfflineTeamToUser(normalizedUser);
                 enforcePinkPowerRestriction(state.user);
                 renderUserInfo();
             }
@@ -491,9 +492,8 @@
             ? `<a href="${profileHref}" target="_blank" rel="noopener noreferrer" class="inherit-link"><strong>${u.name}</strong></a>`
             : `<strong>${u.name}</strong>`;
         const levelLabel = `[Level ${u.level}]`;
-        const attacksLabel = teamText ? formatUserAttacks(u.attacks) : "";
         const teamLabel = teamText
-            ? `, <span class="user-team-label">${teamText}${attacksLabel ? ` ${attacksLabel}` : ""}</span>`
+            ? `, <span class="user-team-label">${teamText}</span>`
             : "";
 
         dom.userInfoContent.innerHTML = `
@@ -569,11 +569,12 @@
         try {
             const lookup = await getOfflineTeamLookup();
             const playerId = Number(user.id);
-            const teamInfo = lookup.get(playerId) || null;
+            const existingTeam = user.eliminationTeam ?? null;
+            const teamInfo = lookup.get(playerId) || existingTeam;
 
             return {
                 ...user,
-                eliminationTeam: teamInfo
+                eliminationTeam: teamInfo ?? null
             };
         } catch (err) {
             console.warn("Unable to attach offline team to user", err);
@@ -584,9 +585,12 @@
         }
     }
 
-    function formatUserAttacks(attacks) {
-        if (attacks === undefined || attacks === null) return "";
-        return `[${attacks} Attacks]`;
+    function normalizeUserProfile(user) {
+        if (!user) return user;
+
+        return {
+            ...user
+        };
     }
 
     function formatUserTeamLabel(teamInfo) {
@@ -1146,8 +1150,7 @@
 
         const updatedUser = {
             ...user,
-            eliminationTeam,
-            attacks: matched.attacks ?? user.attacks
+            eliminationTeam
         };
 
         state.user = updatedUser;
