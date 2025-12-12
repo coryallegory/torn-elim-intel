@@ -258,7 +258,8 @@
         state.clearApiKey();
         setApiKeyApplyMode();
         dom.apikeyInput.value = "";
-        setStatus(dom.apikeyStatus, message, true, false);
+        const hideStatus = message === "No API key loaded";
+        setStatus(dom.apikeyStatus, message, true, hideStatus);
     }
 
     function clearAuthenticatedState() {
@@ -356,7 +357,7 @@
         state.clearFfApiKey();
         setFfApiKeyApplyMode();
         dom.ffapikeyInput.value = "";
-        setStatus(dom.ffapikeyStatus, "Not configured", true, false);
+        setStatus(dom.ffapikeyStatus, "Not configured", false, true);
     }
 
     async function validateFfApiKey(isInit = false) {
@@ -382,7 +383,8 @@
 
         state.ffApiKeyValid = true;
         const label = data && (data.message || data.status_message || data.status) ? (data.message || data.status_message || data.status) : "FFScouter key accepted";
-        setStatus(dom.ffapikeyStatus, label, false, true);
+        const hideStatus = isInit && !data?.message && !data?.status_message && !data?.status;
+        setStatus(dom.ffapikeyStatus, label, false, hideStatus);
 
         setFfApiKeyClearMode();
 
