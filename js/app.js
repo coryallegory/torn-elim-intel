@@ -453,7 +453,8 @@
             ]);
 
             if (!userData.error && userData.profile) {
-                state.user = await attachOfflineTeamToUser(userData.profile);
+                const normalizedUser = normalizeUserProfile(userData.profile);
+                state.user = await attachOfflineTeamToUser(normalizedUser);
                 enforcePinkPowerRestriction(state.user);
                 renderUserInfo();
             }
@@ -491,7 +492,7 @@
             ? `<a href="${profileHref}" target="_blank" rel="noopener noreferrer" class="inherit-link"><strong>${u.name}</strong></a>`
             : `<strong>${u.name}</strong>`;
         const levelLabel = `[Level ${u.level}]`;
-        const attacksLabel = teamText ? formatUserAttacks(u.attacks) : "";
+        const attacksLabel = teamText ? formatUserAttacks(getUserAttacks(u)) : "";
         const teamLabel = teamText
             ? `, <span class="user-team-label">${teamText}${attacksLabel ? ` ${attacksLabel}` : ""}</span>`
             : "";
@@ -582,6 +583,26 @@
                 eliminationTeam: user.eliminationTeam ?? null
             };
         }
+    }
+
+    function getUserAttacks(user) {
+        if (!user) return null;
+
+        const candidates = [user.attacks, user.elimination?.attacks, user.eliminationTeam?.attacks];
+        for (const val of candidates) {
+            if (val !== undefined && val !== null) return val;
+        }
+
+        return null;
+    }
+
+    function normalizeUserProfile(user) {
+        if (!user) return user;
+
+        return {
+            ...user,
+            attacks: getUserAttacks(user)
+        };
     }
 
     function formatUserAttacks(attacks) {
@@ -1147,7 +1168,7 @@
         const updatedUser = {
             ...user,
             eliminationTeam,
-            attacks: matched.attacks ?? user.attacks
+            attacks: matched.attacks ?? getUserAttacks(user)
         };
 
         state.user = updatedUser;
