@@ -1,9 +1,11 @@
 (function () {
     const dom = {
         apikeyInput: document.getElementById("apikey-input"),
+        apikeyRemember: document.getElementById("apikey-remember"),
         apikeyStatus: document.getElementById("apikey-status"),
         apikeyApply: document.getElementById("apikey-apply"),
         ffapikeyInput: document.getElementById("ffapikey-input"),
+        ffapikeyRemember: document.getElementById("ffapikey-remember"),
         ffapikeyStatus: document.getElementById("ffapikey-status"),
         ffapikeyApply: document.getElementById("ffapikey-apply"),
         userBox: document.getElementById("userinfo-box"),
@@ -103,10 +105,42 @@
         return fallback;
     }
 
+    function setApiKeyApplyMode() {
+        dom.apikeyInput.classList.remove("hidden");
+        dom.apikeyApply.textContent = "Apply";
+        dom.apikeyApply.dataset.mode = "apply";
+        dom.apikeyApply.classList.remove("clear-button");
+    }
+
+    function setApiKeyClearMode() {
+        dom.apikeyInput.value = "";
+        dom.apikeyInput.classList.add("hidden");
+        dom.apikeyApply.textContent = "✕";
+        dom.apikeyApply.dataset.mode = "clear";
+        dom.apikeyApply.classList.add("clear-button");
+    }
+
+    function setFfApiKeyApplyMode() {
+        dom.ffapikeyInput.classList.remove("hidden");
+        dom.ffapikeyApply.textContent = "Apply";
+        dom.ffapikeyApply.dataset.mode = "apply";
+        dom.ffapikeyApply.classList.remove("clear-button");
+    }
+
+    function setFfApiKeyClearMode() {
+        dom.ffapikeyInput.value = "";
+        dom.ffapikeyInput.classList.add("hidden");
+        dom.ffapikeyApply.textContent = "✕";
+        dom.ffapikeyApply.dataset.mode = "clear";
+        dom.ffapikeyApply.classList.add("clear-button");
+    }
+
     function init() {
         state.loadFromStorage();
-        dom.apikeyInput.value = state.apikey || "";
-        dom.ffapikeyInput.value = state.ffapikey || "";
+        dom.apikeyRemember.checked = state.rememberApiKey;
+        dom.ffapikeyRemember.checked = state.rememberFfApiKey;
+        dom.apikeyInput.value = "";
+        dom.ffapikeyInput.value = "";
 
         if (state.user) {
             dom.userBox.classList.remove("hidden");
@@ -120,6 +154,8 @@
                 ensureValidSelectedTeam();
                 renderTeams();
                 renderPlayers();
+            } else {
+                loadStaticSnapshot();
             }
             validateAndStart();
         } else {
@@ -134,18 +170,30 @@
         }
 
         dom.apikeyApply.addEventListener("click", () => {
+            if (dom.apikeyApply.dataset.mode === "clear") {
+                clearApiKeyAndUi();
+                return;
+            }
             const key = dom.apikeyInput.value.trim();
             if (!key) {
                 showNoKey();
                 return;
             }
-            state.saveApiKey(key);
+            state.saveApiKey(key, dom.apikeyRemember.checked);
             validateAndStart();
         });
 
         dom.ffapikeyApply.addEventListener("click", () => {
+            if (dom.ffapikeyApply.dataset.mode === "clear") {
+                clearFfApiKeyAndUi();
+                return;
+            }
             const key = dom.ffapikeyInput.value.trim();
-            state.saveFfApiKey(key);
+            if (!key) {
+                clearFfApiKeyAndUi();
+                return;
+            }
+            state.saveFfApiKey(key, dom.ffapikeyRemember.checked);
             validateFfApiKey();
         });
 
@@ -161,6 +209,8 @@
         if (data.error || !data.profile) {
             stopIntervals();
             clearAuthenticatedState();
+            state.clearApiKey();
+            dom.apikeyRemember.checked = false;
             showNoKey("API key invalid");
             await loadStaticSnapshot();
             return;
@@ -170,6 +220,7 @@
         enforcePinkPowerRestriction(state.user);
         dom.apikeyStatus.textContent = "API key loaded";
         dom.apikeyStatus.classList.remove("status-error");
+        setApiKeyClearMode();
         dom.userBox.classList.remove("hidden");
 
         renderUserInfo();
@@ -189,12 +240,15 @@
     }
 
     function showNoKey(message = "No API key loaded") {
+        state.clearApiKey();
+        setApiKeyApplyMode();
+        dom.apikeyInput.value = "";
         dom.apikeyStatus.textContent = message;
         dom.apikeyStatus.classList.add("status-error");
     }
 
     function clearAuthenticatedState() {
-        state.user = null;
+        state.clearCachedData();
         dom.userInfoContent.innerHTML = "";
         dom.userBox.classList.add("hidden");
         dom.metadataTimerLabel.textContent = "Next refresh: --";
@@ -202,18 +256,18 @@
         dom.metadataIcon.classList.add("hidden");
         dom.teamIcon.classList.add("hidden");
 
-        state.metadataTimestamp = 0;
-        localStorage.setItem("metadataTimestamp", "0");
-
-        state.teams = [];
-        state.selectedTeamId = null;
-        state.teamPlayers = {};
-        state.teamPlayersTimestamp = {};
-        localStorage.setItem("teamPlayers", JSON.stringify(state.teamPlayers));
-        localStorage.setItem("teamPlayersTimestamp", JSON.stringify(state.teamPlayersTimestamp));
-
         renderTeams();
         renderPlayers();
+    }
+
+    function clearApiKeyAndUi() {
+        stopIntervals();
+        state.clearApiKey();
+        dom.apikeyRemember.checked = false;
+        clearAuthenticatedState();
+        showNoKey();
+        dom.apikeyInput.focus();
+        loadStaticSnapshot();
     }
 
     let staticSnapshotPromise = null;
@@ -285,6 +339,9 @@
 
     function showNoFfKey() {
         state.ffApiKeyValid = false;
+        state.clearFfApiKey();
+        setFfApiKeyApplyMode();
+        dom.ffapikeyInput.value = "";
         dom.ffapikeyStatus.textContent = "Not configured";
         dom.ffapikeyStatus.classList.add("status-error");
     }
@@ -304,8 +361,11 @@
 
         if (!valid) {
             state.ffApiKeyValid = false;
+            state.clearFfApiKey();
+            dom.ffapikeyRemember.checked = false;
             dom.ffapikeyStatus.textContent = data && data.error ? "FFScouter key invalid" : "FFScouter key rejected";
             dom.ffapikeyStatus.classList.add("status-error");
+            setFfApiKeyApplyMode();
             return;
         }
 
@@ -314,9 +374,20 @@
         dom.ffapikeyStatus.textContent = label;
         dom.ffapikeyStatus.classList.remove("status-error");
 
+        setFfApiKeyClearMode();
+
         if (!isInit && state.selectedTeamId) {
             refreshTeamPlayers(true);
         }
+    }
+
+    function clearFfApiKeyAndUi() {
+        state.clearFfApiKey();
+        dom.ffapikeyRemember.checked = false;
+        setFfApiKeyApplyMode();
+        dom.ffapikeyInput.value = "";
+        showNoFfKey();
+        dom.ffapikeyInput.focus();
     }
 
     async function refreshMetadata(force = false) {
@@ -743,6 +814,48 @@
         map.set(id, bs);
     }
 
+    function hasMeaningfulBsValue(value) {
+        if (value === null || value === undefined) return false;
+        if (typeof value === "string") return value.trim() !== "" && value !== "--";
+        if (typeof value === "number") return !Number.isNaN(value);
+        return false;
+    }
+
+    function preserveCachedBattleStats(teamId, players) {
+        if (state.ffApiKeyValid && state.ffapikey) return players;
+        const existing = state.teamPlayers[teamId];
+        if (!Array.isArray(existing) || !existing.length) return players;
+
+        const lookup = new Map();
+        existing.forEach(player => {
+            const id = getPlayerIdentifier(player);
+            if (id === null || id === undefined) return;
+            lookup.set(id, player);
+        });
+
+        players.forEach(player => {
+            const id = getPlayerIdentifier(player);
+            if (id === null || id === undefined) return;
+
+            const prior = lookup.get(id);
+            if (!prior) return;
+
+            const hasNewBs = hasMeaningfulBsValue(player.bs_estimate_human) || hasMeaningfulBsValue(player.bs_estimate);
+            if (hasNewBs) return;
+
+            if (hasMeaningfulBsValue(prior.bs_estimate_human)) {
+                player.bs_estimate_human = prior.bs_estimate_human;
+            }
+            if (hasMeaningfulBsValue(prior.bs_estimate)) {
+                player.bs_estimate = prior.bs_estimate;
+            } else {
+                player.bs_estimate = deriveBsEstimateNumber(player);
+            }
+        });
+
+        return players;
+    }
+
     function attachSortListeners() {
         addSortListeners(dom.teamTableHeaders, "team");
         addSortListeners(dom.playerTableHeaders, "player");
@@ -1005,7 +1118,8 @@
             }
 
             console.log(`Player refresh API calls: ${callCount}`);
-            state.cacheTeamPlayers(teamId, combined);
+            const merged = preserveCachedBattleStats(teamId, combined);
+            state.cacheTeamPlayers(teamId, merged);
             renderPlayers();
             dom.teamIcon.classList.add("hidden");
         })();

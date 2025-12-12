@@ -16,7 +16,7 @@ body {
 
 .panel {
     background: #333;
-    padding: 15px;
+    padding: 12px;
     margin-bottom: 20px;
     border-radius: 6px;
     position: relative;
@@ -28,7 +28,7 @@ h2, h3 {
 
 .grouped-panel {
     position: relative;
-    padding-top: 50px;
+    padding-top: 24px;
     border: 1px solid #666;
 }
 
@@ -42,11 +42,14 @@ h2, h3 {
 .inline-status {
     margin-left: 12px;
     align-self: center;
+    justify-self: start;
+    text-align: left;
 }
 
 
 .status-text {
     margin-top: 5px;
+    text-align: left;
 }
 
 .status-error {
@@ -56,10 +59,22 @@ h2, h3 {
 
 .apikey-row {
     display: grid;
-    grid-template-columns: 1.3fr 2fr auto auto;
+    grid-template-columns: 1.3fr 3fr 1.4fr;
     align-items: center;
-    gap: 8px 10px;
-    padding: 4px 0;
+    gap: 6px 10px;
+    padding: 2px 0;
+}
+
+.apikey-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.apikey-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .apikey-label {
@@ -77,6 +92,19 @@ h2, h3 {
 .apikey-subtext {
     font-size: 12px;
     color: #cfcfcf;
+}
+
+.remember-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #cfcfcf;
+}
+
+.remember-toggle input {
+    width: 14px;
+    height: 14px;
 }
 
 input[type="text"], input[type="number"] {
@@ -168,6 +196,22 @@ tr.selected-row {
 
 .hidden {
     display: none !important;
+}
+
+.clear-button {
+    background: #6c3636;
+    border-color: #a24a4a;
+    width: 34px;
+    padding: 6px 0;
+}
+
+.storage-note {
+    font-size: 12px;
+    color: #cfcfcf;
+    margin: 0 0 8px 0;
+    padding: 6px 8px;
+    background: #2b2b2b;
+    border-radius: 4px;
 }
 
 /* REFRESH SPINNER */
