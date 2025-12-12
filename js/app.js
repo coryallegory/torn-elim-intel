@@ -457,7 +457,7 @@
 
         dom.userInfoContent.innerHTML = `
             <div class="user-info-header">
-                ${userLink}<strong>${u.name}</strong> [${u.level}]${teamText ? ` <span class="user-team-label">Team: ${teamText}</span>` : ""}
+                ${userLink}<strong>${u.name}</strong> [${u.level}]${teamText ? ` <span class="user-team-label">${teamText}</span>` : ""}
             </div>
             <div class="${stateColor}">${statusText}</div>
         `;
