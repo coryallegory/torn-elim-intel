@@ -25,11 +25,13 @@ To avoid rate-limit issues, keep only one tab open with the same API keys.</p>
                                 <button id="apikey-apply" data-mode="apply">Apply</button>
                             </div>
                             <div id="apikey-prompt" class="apikey-prompt hidden">Torn API Key (Public)</div>
-                            <span class="apikey-subtext">Required for data updates</span>
-                            <label class="remember-toggle" id="apikey-remember-wrap">
-                                <input type="checkbox" id="apikey-remember">
-                                <span>Remember on this device</span>
-                            </label>
+                            <div class="apikey-meta-row">
+                                <span class="apikey-subtext">Required for data updates</span>
+                                <label class="remember-toggle" id="apikey-remember-wrap">
+                                    <input type="checkbox" id="apikey-remember">
+                                    <span>Remember on this device</span>
+                                </label>
+                            </div>
                         </div>
                         <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
                     </div>
@@ -41,11 +43,13 @@ To avoid rate-limit issues, keep only one tab open with the same API keys.</p>
                                 <button id="ffapikey-apply" data-mode="apply">Apply</button>
                             </div>
                             <div id="ffapikey-prompt" class="apikey-prompt hidden">FFScouter API Key</div>
-                            <span class="apikey-subtext">Optional, used for Battle Stat Estimates</span>
-                            <label class="remember-toggle" id="ffapikey-remember-wrap">
-                                <input type="checkbox" id="ffapikey-remember">
-                                <span>Remember on this device</span>
-                            </label>
+                            <div class="apikey-meta-row">
+                                <span class="apikey-subtext">Optional, used for Battle Stat Estimates</span>
+                                <label class="remember-toggle" id="ffapikey-remember-wrap">
+                                    <input type="checkbox" id="ffapikey-remember">
+                                    <span>Remember on this device</span>
+                                </label>
+                            </div>
                         </div>
                         <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
                     </div>
