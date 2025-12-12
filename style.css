@@ -199,6 +199,32 @@ th {
     text-decoration: underline;
 }
 
+.player-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.activity-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.dot-green {
+    background: #4caf50;
+}
+
+.dot-yellow {
+    background: #f1c40f;
+}
+
+.dot-grey {
+    background: #777;
+}
+
 th.sortable {
     cursor: pointer;
     position: relative;
