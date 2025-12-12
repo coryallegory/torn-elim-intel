@@ -19,8 +19,16 @@
                         <span class="apikey-title">Torn Public API Key</span>
                         <span class="apikey-subtext">Required for all data</span>
                     </div>
-                    <input type="text" id="apikey-input" placeholder="Enter API key">
-                    <button id="apikey-apply">Apply</button>
+                    <div class="apikey-control-group">
+                        <div class="apikey-input-row" id="apikey-input-row">
+                            <input type="text" id="apikey-input" placeholder="Enter API key">
+                            <button id="apikey-apply" data-mode="apply">Apply</button>
+                        </div>
+                        <label class="remember-toggle">
+                            <input type="checkbox" id="apikey-remember">
+                            <span>Remember on this device</span>
+                        </label>
+                    </div>
                     <span id="apikey-status" class="status-text status-error inline-status">No API key loaded</span>
                 </div>
 
@@ -29,10 +37,20 @@
                         <span class="apikey-title">FFScouter API Key (for Est Battle Stats)</span>
                         <span class="apikey-subtext">Optional, used for stat estimates</span>
                     </div>
-                    <input type="text" id="ffapikey-input" placeholder="Enter FFScouter API key">
-                    <button id="ffapikey-apply">Apply</button>
+                    <div class="apikey-control-group">
+                        <div class="apikey-input-row" id="ffapikey-input-row">
+                            <input type="text" id="ffapikey-input" placeholder="Enter FFScouter API key">
+                            <button id="ffapikey-apply" data-mode="apply">Apply</button>
+                        </div>
+                        <label class="remember-toggle">
+                            <input type="checkbox" id="ffapikey-remember">
+                            <span>Remember on this device</span>
+                        </label>
+                    </div>
                     <span id="ffapikey-status" class="status-text status-error inline-status">Not configured</span>
                 </div>
+
+                <p class="storage-note">Keys are stored locally. This web app runs entirely on your device and only calls official Torn APIs and FFScouter.</p>
 
                 <div id="userinfo-box" class="userinfo-box hidden">
                     <div id="user-info-content"></div>

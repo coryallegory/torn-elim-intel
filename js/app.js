@@ -1,9 +1,11 @@
 (function () {
     const dom = {
         apikeyInput: document.getElementById("apikey-input"),
+        apikeyRemember: document.getElementById("apikey-remember"),
         apikeyStatus: document.getElementById("apikey-status"),
         apikeyApply: document.getElementById("apikey-apply"),
         ffapikeyInput: document.getElementById("ffapikey-input"),
+        ffapikeyRemember: document.getElementById("ffapikey-remember"),
         ffapikeyStatus: document.getElementById("ffapikey-status"),
         ffapikeyApply: document.getElementById("ffapikey-apply"),
         userBox: document.getElementById("userinfo-box"),
@@ -103,10 +105,42 @@
         return fallback;
     }
 
+    function setApiKeyApplyMode() {
+        dom.apikeyInput.classList.remove("hidden");
+        dom.apikeyApply.textContent = "Apply";
+        dom.apikeyApply.dataset.mode = "apply";
+        dom.apikeyApply.classList.remove("clear-button");
+    }
+
+    function setApiKeyClearMode() {
+        dom.apikeyInput.value = "";
+        dom.apikeyInput.classList.add("hidden");
+        dom.apikeyApply.textContent = "✕";
+        dom.apikeyApply.dataset.mode = "clear";
+        dom.apikeyApply.classList.add("clear-button");
+    }
+
+    function setFfApiKeyApplyMode() {
+        dom.ffapikeyInput.classList.remove("hidden");
+        dom.ffapikeyApply.textContent = "Apply";
+        dom.ffapikeyApply.dataset.mode = "apply";
+        dom.ffapikeyApply.classList.remove("clear-button");
+    }
+
+    function setFfApiKeyClearMode() {
+        dom.ffapikeyInput.value = "";
+        dom.ffapikeyInput.classList.add("hidden");
+        dom.ffapikeyApply.textContent = "✕";
+        dom.ffapikeyApply.dataset.mode = "clear";
+        dom.ffapikeyApply.classList.add("clear-button");
+    }
+
     function init() {
         state.loadFromStorage();
-        dom.apikeyInput.value = state.apikey || "";
-        dom.ffapikeyInput.value = state.ffapikey || "";
+        dom.apikeyRemember.checked = state.rememberApiKey;
+        dom.ffapikeyRemember.checked = state.rememberFfApiKey;
+        dom.apikeyInput.value = "";
+        dom.ffapikeyInput.value = "";
 
         if (state.user) {
             dom.userBox.classList.remove("hidden");
@@ -134,18 +168,30 @@
         }
 
         dom.apikeyApply.addEventListener("click", () => {
+            if (dom.apikeyApply.dataset.mode === "clear") {
+                clearApiKeyAndUi();
+                return;
+            }
             const key = dom.apikeyInput.value.trim();
             if (!key) {
                 showNoKey();
                 return;
             }
-            state.saveApiKey(key);
+            state.saveApiKey(key, dom.apikeyRemember.checked);
             validateAndStart();
         });
 
         dom.ffapikeyApply.addEventListener("click", () => {
+            if (dom.ffapikeyApply.dataset.mode === "clear") {
+                clearFfApiKeyAndUi();
+                return;
+            }
             const key = dom.ffapikeyInput.value.trim();
-            state.saveFfApiKey(key);
+            if (!key) {
+                clearFfApiKeyAndUi();
+                return;
+            }
+            state.saveFfApiKey(key, dom.ffapikeyRemember.checked);
             validateFfApiKey();
         });
 
@@ -170,6 +216,7 @@
         enforcePinkPowerRestriction(state.user);
         dom.apikeyStatus.textContent = "API key loaded";
         dom.apikeyStatus.classList.remove("status-error");
+        setApiKeyClearMode();
         dom.userBox.classList.remove("hidden");
 
         renderUserInfo();
@@ -189,6 +236,8 @@
     }
 
     function showNoKey(message = "No API key loaded") {
+        setApiKeyApplyMode();
+        dom.apikeyInput.value = "";
         dom.apikeyStatus.textContent = message;
         dom.apikeyStatus.classList.add("status-error");
     }
@@ -214,6 +263,16 @@
 
         renderTeams();
         renderPlayers();
+    }
+
+    function clearApiKeyAndUi() {
+        stopIntervals();
+        state.clearApiKey();
+        dom.apikeyRemember.checked = false;
+        clearAuthenticatedState();
+        showNoKey();
+        dom.apikeyInput.focus();
+        loadStaticSnapshot();
     }
 
     let staticSnapshotPromise = null;
@@ -285,6 +344,8 @@
 
     function showNoFfKey() {
         state.ffApiKeyValid = false;
+        setFfApiKeyApplyMode();
+        dom.ffapikeyInput.value = "";
         dom.ffapikeyStatus.textContent = "Not configured";
         dom.ffapikeyStatus.classList.add("status-error");
     }
@@ -306,6 +367,7 @@
             state.ffApiKeyValid = false;
             dom.ffapikeyStatus.textContent = data && data.error ? "FFScouter key invalid" : "FFScouter key rejected";
             dom.ffapikeyStatus.classList.add("status-error");
+            setFfApiKeyApplyMode();
             return;
         }
 
@@ -314,9 +376,20 @@
         dom.ffapikeyStatus.textContent = label;
         dom.ffapikeyStatus.classList.remove("status-error");
 
+        setFfApiKeyClearMode();
+
         if (!isInit && state.selectedTeamId) {
             refreshTeamPlayers(true);
         }
+    }
+
+    function clearFfApiKeyAndUi() {
+        state.clearFfApiKey();
+        dom.ffapikeyRemember.checked = false;
+        setFfApiKeyApplyMode();
+        dom.ffapikeyInput.value = "";
+        showNoFfKey();
+        dom.ffapikeyInput.focus();
     }
 
     async function refreshMetadata(force = false) {

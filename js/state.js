@@ -2,6 +2,8 @@ window.state = {
     apikey: "",
     ffapikey: "",
     ffApiKeyValid: false,
+    rememberApiKey: false,
+    rememberFfApiKey: false,
     user: null,
     teams: [],
     selectedTeamId: null,
@@ -18,8 +20,14 @@ window.state = {
     MIN_REFRESH_MS: 10000,
 
     loadFromStorage() {
-        this.apikey = localStorage.getItem("apikey") || "";
-        this.ffapikey = localStorage.getItem("ffapikey") || "";
+        const rememberApiKeyRaw = localStorage.getItem("rememberApiKey");
+        const rememberFfApiKeyRaw = localStorage.getItem("rememberFfApiKey");
+
+        this.rememberApiKey = rememberApiKeyRaw === "true";
+        this.rememberFfApiKey = rememberFfApiKeyRaw === "true";
+
+        this.apikey = this.rememberApiKey ? (localStorage.getItem("apikey") || "") : "";
+        this.ffapikey = this.rememberFfApiKey ? (localStorage.getItem("ffapikey") || "") : "";
         try {
             const userRaw = localStorage.getItem("user");
             const teamsRaw = localStorage.getItem("teams");
@@ -48,14 +56,41 @@ window.state = {
         }
     },
 
-    saveApiKey(key) {
+    saveApiKey(key, rememberKey = false) {
         this.apikey = key;
-        localStorage.setItem("apikey", key);
+        this.rememberApiKey = rememberKey;
+        localStorage.setItem("rememberApiKey", rememberKey ? "true" : "false");
+        if (rememberKey) {
+            localStorage.setItem("apikey", key);
+        } else {
+            localStorage.removeItem("apikey");
+        }
     },
 
-    saveFfApiKey(key) {
+    saveFfApiKey(key, rememberKey = false) {
         this.ffapikey = key;
-        localStorage.setItem("ffapikey", key);
+        this.rememberFfApiKey = rememberKey;
+        localStorage.setItem("rememberFfApiKey", rememberKey ? "true" : "false");
+        if (rememberKey) {
+            localStorage.setItem("ffapikey", key);
+        } else {
+            localStorage.removeItem("ffapikey");
+        }
+    },
+
+    clearApiKey() {
+        this.apikey = "";
+        this.rememberApiKey = false;
+        localStorage.removeItem("apikey");
+        localStorage.setItem("rememberApiKey", "false");
+    },
+
+    clearFfApiKey() {
+        this.ffapikey = "";
+        this.ffApiKeyValid = false;
+        this.rememberFfApiKey = false;
+        localStorage.removeItem("ffapikey");
+        localStorage.setItem("rememberFfApiKey", "false");
     },
 
     cacheMetadata(user, teams) {
