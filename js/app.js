@@ -1,4 +1,6 @@
 (function () {
+    const FF_FEATURES_ENABLED = false;
+
     const dom = {
         apikeyInput: document.getElementById("apikey-input"),
         apikeyInputRow: document.getElementById("apikey-input-row"),
@@ -152,12 +154,33 @@
         dom.ffapikeyRememberWrap.classList.add("hidden");
     }
 
+    function disableFfScouterUi() {
+        state.clearFfApiKey();
+        state.rememberFfApiKey = false;
+        dom.ffapikeyInput.value = "";
+
+        [
+            dom.ffapikeyInputRow,
+            dom.ffapikeyDisplayRow,
+            dom.ffapikeyRememberWrap,
+            dom.ffapikeyStatus
+        ].forEach(el => el?.classList.add("hidden"));
+
+        const ffRow = dom.ffapikeyInputRow?.closest(".apikey-row");
+        if (ffRow) {
+            ffRow.classList.add("hidden");
+        }
+    }
+
     function init() {
         state.loadFromStorage();
         dom.apikeyRemember.checked = state.rememberApiKey;
-        dom.ffapikeyRemember.checked = state.rememberFfApiKey;
         dom.apikeyInput.value = "";
         dom.ffapikeyInput.value = "";
+
+        if (FF_FEATURES_ENABLED) {
+            dom.ffapikeyRemember.checked = state.rememberFfApiKey;
+        }
 
         if (state.user) {
             dom.userBox.classList.remove("hidden");
@@ -180,10 +203,14 @@
             loadStaticSnapshot();
         }
 
-        if (state.ffapikey) {
-            validateFfApiKey(true);
+        if (FF_FEATURES_ENABLED) {
+            if (state.ffapikey) {
+                validateFfApiKey(true);
+            } else {
+                showNoFfKey();
+            }
         } else {
-            showNoFfKey();
+            disableFfScouterUi();
         }
 
         dom.apikeyApply.addEventListener("click", () => {
@@ -200,19 +227,23 @@
             clearApiKeyAndUi();
         });
 
-        dom.ffapikeyApply.addEventListener("click", () => {
-            const key = dom.ffapikeyInput.value.trim();
-            if (!key) {
-                clearFfApiKeyAndUi();
-                return;
-            }
-            state.saveFfApiKey(key, dom.ffapikeyRemember.checked);
-            validateFfApiKey();
-        });
+        if (FF_FEATURES_ENABLED) {
+            dom.ffapikeyApply.addEventListener("click", () => {
+                const key = dom.ffapikeyInput.value.trim();
+                if (!key) {
+                    clearFfApiKeyAndUi();
+                    return;
+                }
+                state.saveFfApiKey(key, dom.ffapikeyRemember.checked);
+                validateFfApiKey();
+            });
 
-        dom.ffapikeyClear.addEventListener("click", () => {
-            clearFfApiKeyAndUi();
-        });
+            dom.ffapikeyClear.addEventListener("click", () => {
+                clearFfApiKeyAndUi();
+            });
+        } else {
+            disableFfScouterUi();
+        }
 
         attachFilterListeners();
         attachSortListeners();
@@ -361,6 +392,7 @@
     }
 
     async function validateFfApiKey(isInit = false) {
+        if (!FF_FEATURES_ENABLED) return;
         const key = state.ffapikey;
         if (!key) {
             showNoFfKey();
@@ -775,7 +807,7 @@
     }
 
     async function maybeFetchFfScouterStats(players) {
-        if (!state.ffApiKeyValid || !state.ffapikey || !players.length) return;
+        if (!FF_FEATURES_ENABLED || !state.ffApiKeyValid || !state.ffapikey || !players.length) return;
         const ids = players
             .map(getPlayerIdentifier)
             .filter(id => id !== null && id !== undefined);
@@ -835,7 +867,7 @@
     }
 
     function preserveCachedBattleStats(teamId, players) {
-        if (state.ffApiKeyValid && state.ffapikey) return players;
+        if (FF_FEATURES_ENABLED && state.ffApiKeyValid && state.ffapikey) return players;
         const existing = state.teamPlayers[teamId];
         if (!Array.isArray(existing) || !existing.length) return players;
 
