@@ -450,9 +450,13 @@
         const stateColor = mapStateColor(u.status.state);
         const statusText = simplifyStatus(u.status);
         const teamText = formatUserTeamLabel(u.eliminationTeam);
+        const userId = getPlayerIdentifier(u);
+        const userLink = userId
+            ? `<a href="https://www.torn.com/profiles.php?XID=${userId}" target="_blank" rel="noopener noreferrer" class="inherit-link">${userId}</a> `
+            : "";
 
         dom.userInfoContent.innerHTML = `
-            <div><strong>${u.name}</strong> [${u.level}]</div>
+            <div>${userLink}<strong>${u.name}</strong> [${u.level}]</div>
             <div class="${stateColor}">${statusText}</div>
             <div>Team: ${teamText}</div>
         `;
