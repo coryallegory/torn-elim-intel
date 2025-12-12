@@ -26,8 +26,6 @@
         teamTableHeaders: document.querySelectorAll("#team-table thead th[data-col]"),
         playerTableBody: document.getElementById("player-table-body"),
         playerTableHeaders: document.querySelectorAll("#player-table thead th[data-col]"),
-        levelMinInput: document.getElementById("level-min"),
-        levelMaxInput: document.getElementById("level-max"),
         bsMinInput: document.getElementById("bs-min"),
         bsMaxInput: document.getElementById("bs-max"),
         filterOkayOnly: document.getElementById("filter-okay-only"),
@@ -1191,8 +1189,6 @@
     }
 
     function applyFilters(players) {
-        const levelMin = parseInt(dom.levelMinInput.value || 0, 10);
-        const levelMax = parseInt(dom.levelMaxInput.value || 100, 10);
         const bsMinInputVal = dom.bsMinInput.value.trim();
         const bsMaxInputVal = dom.bsMaxInput.value.trim();
         const bsMin = parseBattlestatValue(bsMinInputVal);
@@ -1207,7 +1203,6 @@
             const statusText = simplifyStatus(p.status);
             const statusState = p.status?.state;
             const playerLocation = p.location;
-            if (p.level < levelMin || p.level > levelMax) return false;
             const bsValue = typeof p.bs_estimate === "number" ? p.bs_estimate : parseBattlestatValue(p.bs_estimate);
             const bsIsNumber = typeof bsValue === "number" && !Number.isNaN(bsValue);
             if (hasBsMin && (!bsIsNumber || bsValue < bsMin)) return false;
@@ -1412,8 +1407,6 @@
     }
 
     function attachFilterListeners() {
-        dom.levelMinInput.addEventListener("input", renderPlayers);
-        dom.levelMaxInput.addEventListener("input", renderPlayers);
         dom.bsMinInput.addEventListener("input", renderPlayers);
         dom.bsMaxInput.addEventListener("input", renderPlayers);
         dom.filterOkayOnly.addEventListener("change", renderPlayers);
